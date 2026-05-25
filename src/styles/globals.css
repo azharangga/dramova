@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+/* ── Original Dramova app.css loaded from public/css/app.css via <link> in layout ── */
+/* Tailwind utilities are available for components, but the main styling
+   comes from the original CSS file to preserve 100% UI fidelity. */
