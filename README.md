@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="public/img/logo.png" alt="Dramova Logo" width="120" />
-</p>
-
 <h1 align="center">Dramova</h1>
 
 <p align="center">
