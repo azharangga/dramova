@@ -1,4 +1,4 @@
-/* Serial page · catalog with hero slider. */
+/* Serial page · catalog with hero slider + full-catalog smart search. */
 (function () {
   const D = window.DramSi;
 
@@ -14,13 +14,34 @@
   const newRail = document.getElementById('serialNewRail');
   const forYouGrid = document.getElementById('serialForYouGrid');
   const loadMoreBtn = document.getElementById('loadMoreBtn');
-  const state = { page: 1, items: [], keyword: '', year: '', filterYears: [], availableYears: [], heroSeed: Math.random() };
+
+  const state = {
+    page: 1,
+    items: [],       // catalog normal (non-search)
+    keyword: '',
+    year: '',
+    filterYears: [],
+    availableYears: [],
+    heroSeed: Math.random(),
+  };
+
   let platform = 'kdrama';
+  let searchDebounceId = null;
   let heroTimer = null;
   let heroIndex = 0;
   let heroSlides = [];
   let loadToken = 0;
   const heroDetailCache = new Map();
+
+  // ── Catalog cache — pakai shared prefetch cache ───────────────────────────
+  function getCatalog(plat) {
+    if (window.__DRAMOVA_PREFETCH__) return window.__DRAMOVA_PREFETCH__.getEntry(plat);
+    if (!window.__DRAMOVA_CATALOG__) window.__DRAMOVA_CATALOG__ = {};
+    if (!window.__DRAMOVA_CATALOG__[plat]) {
+      window.__DRAMOVA_CATALOG__[plat] = { items: [], fullyLoaded: false, crawlPromise: null, listeners: [] };
+    }
+    return window.__DRAMOVA_CATALOG__[plat];
+  }
 
   // ── Tab switching ──────────────────────────────────────────────────────────
   const tabBtns = document.querySelectorAll('[data-serial-tab]');
@@ -40,7 +61,6 @@
         btn.style.borderColor = 'var(--border-muted)';
       }
     });
-    // Reset search & filters when switching platform
     searchInput.value = '';
     state.keyword = '';
     searchClear.hidden = true;
@@ -51,6 +71,7 @@
   tabBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       if (btn.dataset.serialTab === platform) return;
+      clearTimeout(searchDebounceId);
       setActiveTab(btn.dataset.serialTab);
       heroDetailCache.clear();
       loadFilters();
@@ -58,7 +79,9 @@
     });
   });
   // ──────────────────────────────────────────────────────────────────────────
+
   const minFilterYear = 2022;
+  const MAX_CRAWL_PAGES = 20; // batas crawl semua halaman supaya tidak overload
 
   function synopsisOf(item) {
     return item?.synopsis || item?.description || item?.introduction || item?.summary || '';
@@ -66,7 +89,7 @@
 
   function hasSliderSynopsis(item) {
     const synopsis = synopsisOf(item).trim();
-    if (!synopsis) return true; // Allow items without synopsis — will be enriched later
+    if (!synopsis) return true;
     if (synopsis.length < 120) return false;
     return !/^(?:drama korea pilihan|intrik dan misteri seputar|kisah cinta|cerita menarik)\b/i.test(synopsis);
   }
@@ -108,11 +131,7 @@
 
   function escapeHtml(value) {
     return String(value || '').replace(/[&<>"']/g, (char) => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     }[char]));
   }
 
@@ -125,12 +144,88 @@
       .sort((a, b) => Number(b) - Number(a));
   }
 
-  function filterItems(items) {
+  // ── Smart search helpers ───────────────────────────────────────────────────
+  function normalizeQuery(q) {
+    return String(q || '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function tokenize(text) {
+    return normalizeQuery(text).split(' ').filter(Boolean);
+  }
+
+  function searchScore(item, queryTokens) {
+    const title = normalizeQuery(item.title || '');
+    const synopsis = normalizeQuery(synopsisOf(item));
+    const queryStr = queryTokens.join(' ');
+
+    if (title === queryStr) return 100;
+    if (title.startsWith(queryStr)) return 80;
+    if (title.includes(queryStr)) return 60;
+
+    const titleTokens = tokenize(title);
+    if (queryTokens.every((t) => titleTokens.some((tt) => tt.startsWith(t)))) return 50;
+    if (queryTokens.some((t) => title.includes(t))) return 30;
+    if (queryTokens.some((t) => synopsis.includes(t))) return 10;
+    return 0;
+  }
+
+  function filterAndSearchItems(items) {
+    if (!state.keyword) return filterItems(items);
+    const queryTokens = tokenize(state.keyword);
     return items.filter((item) => {
-      const yearOk = !state.year || getItemYear(item) === state.year;
-      return yearOk;
+      if (state.year && getItemYear(item) !== state.year) return false;
+      return searchScore(item, queryTokens) > 0;
     });
   }
+
+  function filterItems(items) {
+    return items.filter((item) => !state.year || getItemYear(item) === state.year);
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
+  // ── Full-catalog crawl — delegasi ke shared prefetch ──────────────────────
+  function crawlFullCatalog(plat, onBatch) {
+    if (window.__DRAMOVA_PREFETCH__) {
+      if (onBatch) window.__DRAMOVA_PREFETCH__.subscribe(plat, (items, isDone) => onBatch(items, isDone));
+      else window.__DRAMOVA_PREFETCH__.crawl(plat);
+      return Promise.resolve();
+    }
+    // Fallback kalau prefetch belum siap
+    const cat = getCatalog(plat);
+    if (cat.fullyLoaded) { if (onBatch && cat.items.length > 0) onBatch(cat.items, true); return Promise.resolve(); }
+    if (cat.crawlPromise) { return cat.crawlPromise.then(() => { if (onBatch) onBatch(cat.items, true); }); }
+    const seenIds = new Set(cat.items.map((it) => it.id));
+    cat.crawlPromise = (async () => {
+      let page = 1;
+      while (page <= MAX_CRAWL_PAGES) {
+        const pages = Array.from({ length: 5 }, (_, i) => page + i);
+        const results = await Promise.allSettled(pages.map((p) => D.Platforms[plat].home(p, {})));
+        let gotNew = false, anyMore = false;
+        for (const r of results) {
+          if (r.status !== 'fulfilled') continue;
+          const data = D.unwrap(r.value) || {};
+          const newItems = (data.items || []).filter((it) => it.id && !seenIds.has(it.id));
+          newItems.forEach((it) => seenIds.add(it.id));
+          cat.items.push(...newItems);
+          if (newItems.length > 0) gotNew = true;
+          if (data.hasMore !== false && (data.items || []).length >= 6) anyMore = true;
+        }
+        if (gotNew && onBatch) onBatch(cat.items, false);
+        if (!anyMore || !gotNew) break;
+        page += 5;
+      }
+      cat.fullyLoaded = true;
+      cat.crawlPromise = null;
+      if (onBatch) onBatch(cat.items, true);
+    })();
+    return cat.crawlPromise;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
 
   function syncFilterOptions() {
     const fallbackYears = state.items.map(getItemYear).filter(Boolean);
@@ -219,7 +314,6 @@
     });
   }
 
-  // Stable shuffle: urutan tetap sama selama session
   function stableShuffle(items) {
     return [...(items || [])].sort((a, b) => {
       const hashA = String(a.id || '').split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
@@ -228,35 +322,46 @@
     });
   }
 
-  function shuffle(arr) {
-    const pool = [...arr];
-    for (let i = pool.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
+  // ── Render search results dengan label progress ────────────────────────────
+  function renderSearchSections(allItems, isDone) {
+    const queryTokens = tokenize(state.keyword);
+    const matched = allItems.filter((item) => {
+      if (state.year && getItemYear(item) !== state.year) return false;
+      return searchScore(item, queryTokens) > 0;
+    });
+    const ranked = [...matched].sort((a, b) => searchScore(b, queryTokens) - searchScore(a, queryTokens));
+
+    const trendingHeader = document.querySelector('#serialTrendingSection .section-title');
+    if (trendingHeader) {
+      trendingHeader.textContent = D.t('serial.trending');
     }
-    return pool;
+
+    renderRail(trendingRail, ranked.slice(0, 12), { ranked: true });
+    renderRail(newRail, []);
+    renderGrid(forYouGrid, ranked.slice(12));
   }
 
   function renderSections(items) {
-    const visibleItems = filterItems(items);
-
     if (state.keyword) {
-      renderRail(trendingRail, visibleItems.slice(0, 12), { ranked: true });
-      renderRail(newRail, []);
-      renderGrid(forYouGrid, visibleItems.slice(12));
+      renderSearchSections(items, true);
       return;
     }
 
-    // Trending: sort by popularity
+    // Reset header ke normal
+    const trendingHeader = document.querySelector('#serialTrendingSection .section-title');
+    if (trendingHeader && trendingHeader.dataset.i18n) {
+      trendingHeader.textContent = D.t('serial.trending');
+    }
+
+    const visibleItems = filterItems(items);
+
     const trending = sortByPopularity(visibleItems).slice(0, 12);
     const trendingIds = new Set(trending.map((it) => it.id));
 
-    // New Release: dari sisa item, sort by tahun terbaru
     const remaining = visibleItems.filter((it) => !trendingIds.has(it.id));
     const newRelease = sortByNewest(remaining).slice(0, 12);
     const newReleaseIds = new Set(newRelease.map((it) => it.id));
 
-    // For You: sisa item, stable shuffle (urutan konsisten)
     const forYou = stableShuffle(remaining.filter((it) => !newReleaseIds.has(it.id)));
 
     renderRail(trendingRail, trending, { ranked: true });
@@ -270,6 +375,7 @@
     forYouGrid.innerHTML = D.buildSkeletons(12);
   }
 
+  // ── Hero ──────────────────────────────────────────────────────────────────
   function moveHero(idx) {
     if (!heroSlides.length) return;
     const prevIndex = heroIndex;
@@ -279,11 +385,8 @@
     const slides = heroTrack.querySelectorAll('.home-hero-slide');
     slides.forEach((slide, i) => {
       slide.classList.remove('is-active', 'is-prev');
-      if (i === heroIndex) {
-        slide.classList.add('is-active');
-      } else if (i === prevIndex) {
-        slide.classList.add('is-prev');
-      }
+      if (i === heroIndex) slide.classList.add('is-active');
+      else if (i === prevIndex) slide.classList.add('is-prev');
     });
 
     heroDots.querySelectorAll('.hero-dot').forEach((dot, i) => {
@@ -305,10 +408,6 @@
     startHeroAutoplay();
   }
 
-  /**
-   * Enrich hanya item yang akan tampil di hero slider (max 5).
-   * Ini jauh lebih hemat kuota dibanding enrich semua 60 item.
-   */
   async function enrichHeroItems(heroItems) {
     const enriched = await Promise.all(heroItems.map(async (item) => {
       try {
@@ -349,7 +448,6 @@
       return;
     }
 
-    // Preload gambar hero pertama sebelum render supaya tidak ada flash kosong
     const firstCover = heroSlides[0]?.banner || heroSlides[0]?.cover || heroSlides[0]?.image || '';
     const doRender = () => {
       heroTrack.innerHTML = heroSlides.map((it, i) => {
@@ -357,7 +455,6 @@
         const synopsis = synopsisOf(it);
         const eps = D.episodeCount ? D.episodeCount(it) : Number(it.episodes || it.totalEpisodes || 0);
         const epsLabel = eps > 1 ? `${eps} ${D.t('common.episodes')}` : '';
-
         const dot = `<span style="width:3px;height:3px;border-radius:50%;background:#777;display:inline-block;flex-shrink:0;"></span>`;
         const metaHtml = [
           epsLabel ? `<span>${epsLabel}</span>` : '',
@@ -404,28 +501,21 @@
       });
 
       heroIndex = 0;
-
       startHeroAutoplay();
       window.refreshIcons?.();
 
-      // Smart crop: sesuaikan object-position berdasarkan rasio gambar
       heroTrack.querySelectorAll('.home-hero-img').forEach((img) => {
         const applyCrop = () => {
           const ratio = img.naturalWidth / img.naturalHeight;
-          if (ratio < 0.9) {
-            img.style.objectPosition = 'center 15%';
-          } else if (ratio < 1.4) {
-            img.style.objectPosition = 'center 25%';
-          } else {
-            img.style.objectPosition = 'center 30%';
-          }
+          if (ratio < 0.9) img.style.objectPosition = 'center 15%';
+          else if (ratio < 1.4) img.style.objectPosition = 'center 25%';
+          else img.style.objectPosition = 'center 30%';
         };
         if (img.complete && img.naturalWidth) applyCrop();
         else img.addEventListener('load', applyCrop, { once: true });
       });
     };
 
-    // Preload cover image pertama supaya tidak ada flash putih
     if (firstCover && !firstCover.includes('placeholder')) {
       let rendered = false;
       const safeRender = () => { if (!rendered) { rendered = true; doRender(); } };
@@ -433,13 +523,13 @@
       img.onload = safeRender;
       img.onerror = safeRender;
       img.src = firstCover;
-      // Timeout fallback kalau image lambat
       setTimeout(safeRender, 2500);
     } else {
       doRender();
     }
   }
 
+  // ── Normal load (catalog biasa, bukan search) ──────────────────────────────
   async function load(reset = true) {
     const token = reset ? ++loadToken : loadToken;
     if (reset) {
@@ -457,25 +547,37 @@
 
     try {
       const filters = { year: state.year };
-      const res = state.keyword
-        ? await D.Platforms[platform].search(state.keyword, filters)
-        : await D.Platforms[platform].home(state.page, filters);
+      const res = await D.Platforms[platform].home(state.page, filters);
       const data = D.unwrap(res) || {};
       const items = data.items || [];
       state.items = reset ? items : [...state.items, ...items];
 
-      // Render sections langsung dari data backend (tanpa enrich semua item)
+      // Sync ke catalogCache
+      const cat = getCatalog(platform);
+      if (reset) {
+        const seenIds = new Set(items.map((it) => it.id));
+        cat.items = [...items];
+        // Tambahkan item cache yang belum ada
+        for (const it of (cat.items || [])) {
+          if (!seenIds.has(it.id)) { seenIds.add(it.id); cat.items.push(it); }
+        }
+      } else {
+        const seenIds = new Set(cat.items.map((it) => it.id));
+        items.forEach((it) => { if (!seenIds.has(it.id)) cat.items.push(it); });
+      }
+
       renderSections(state.items);
       syncFilterOptions();
 
       if (reset) {
-        // Enrich hero items (max 5) untuk synopsis + cover yang lengkap
-        // Render hero SEKALI setelah enrich selesai — hindari flash/double render
         const heroPool = pickHeroItems(state.items, 5);
         enrichHeroItems(heroPool).then((readyHero) => {
           if (token !== loadToken) return;
           renderHero(readyHero);
         });
+
+        // Mulai crawl background supaya data lengkap untuk search berikutnya
+        crawlFullCatalog(platform, null);
       }
 
       loadMoreBtn.hidden = Boolean(state.keyword) || data.hasMore === false || items.length < 6;
@@ -496,17 +598,52 @@
       trendingRail.innerHTML = D.buildErrorState(message, { inline: true, retryId: 'serial' });
       newRail.innerHTML = D.buildErrorState(message, { inline: true, retryId: 'serial' });
       forYouGrid.innerHTML = D.buildErrorState(message, { retryId: 'serial' });
-      forYouGrid.querySelectorAll('[data-retry-section]').forEach((btn) => {
-        btn.addEventListener('click', () => load(true));
-      });
-      trendingRail.querySelectorAll('[data-retry-section]').forEach((btn) => {
-        btn.addEventListener('click', () => load(true));
-      });
-      newRail.querySelectorAll('[data-retry-section]').forEach((btn) => {
-        btn.addEventListener('click', () => load(true));
+      [trendingRail, newRail, forYouGrid].forEach((el) => {
+        el.querySelectorAll('[data-retry-section]').forEach((btn) => {
+          btn.addEventListener('click', () => load(true));
+        });
       });
     }
   }
+
+  // ── Search: streaming dari full catalog ────────────────────────────────────
+  let searchToken = 0;
+
+  function doSearch(kw) {
+    const token = ++searchToken;
+    state.keyword = kw;
+    searchClear.hidden = !kw;
+    loadMoreBtn.hidden = true;
+
+    if (!kw) {
+      // Reset header section
+      const trendingHeader = document.querySelector('#serialTrendingSection .section-title');
+      if (trendingHeader) trendingHeader.textContent = D.t('serial.trending');
+      renderSections(state.items);
+      return;
+    }
+
+    // Tampilkan hasil dari data yang sudah ada dulu (instan)
+    const cat = getCatalog(platform);
+    const initialPool = cat.items.length > 0 ? cat.items : state.items;
+    if (initialPool.length > 0) {
+      renderSearchSections(initialPool, cat.fullyLoaded);
+    } else {
+      trendingRail.innerHTML = D.buildSkeletons(8);
+      newRail.innerHTML = `<div class="text-sm text-white/45 px-2"></div>`;
+      forYouGrid.innerHTML = D.buildSkeletons(12);
+    }
+
+    // Kalau catalog belum penuh, crawl sambil update UI secara realtime
+    if (!cat.fullyLoaded) {
+      crawlFullCatalog(platform, (allItems, isDone) => {
+        if (token !== searchToken) return; // user sudah ganti keyword
+        if (!state.keyword) return;
+        renderSearchSections(allItems, isDone);
+      });
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────────────
 
   loadMoreBtn.addEventListener('click', () => {
     state.page += 1;
@@ -515,25 +652,36 @@
 
   searchForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    state.keyword = searchInput.value.trim();
-    searchClear.hidden = !state.keyword;
-    load(true);
+    clearTimeout(searchDebounceId);
+    doSearch(searchInput.value.trim());
   });
 
   searchInput.addEventListener('input', () => {
-    searchClear.hidden = !searchInput.value.trim();
-    if (!searchInput.value.trim() && state.keyword) {
-      state.keyword = '';
-      load(true);
+    const kw = searchInput.value.trim();
+    searchClear.hidden = !kw;
+    clearTimeout(searchDebounceId);
+
+    if (!kw) {
+      doSearch('');
+      return;
     }
+
+    // Render lokal instan sebelum debounce selesai
+    const cat = getCatalog(platform);
+    const pool = cat.items.length > 0 ? cat.items : state.items;
+    if (pool.length > 0) {
+      state.keyword = kw;
+      renderSearchSections(pool, cat.fullyLoaded);
+    }
+
+    searchDebounceId = setTimeout(() => doSearch(kw), 350);
   });
 
   searchClear.addEventListener('click', () => {
+    clearTimeout(searchDebounceId);
     searchInput.value = '';
-    state.keyword = '';
-    searchClear.hidden = true;
+    doSearch('');
     searchInput.focus();
-    load(true);
   });
 
   yearFilter?.addEventListener('click', openYearSheet);
@@ -541,7 +689,8 @@
   filterReset?.addEventListener('click', () => {
     state.year = '';
     syncFilterOptions();
-    load(true);
+    if (state.keyword) doSearch(state.keyword);
+    else load(true);
   });
 
   heroTrack.addEventListener('touchstart', () => clearInterval(heroTimer), { passive: true });

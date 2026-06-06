@@ -136,6 +136,8 @@ export default function RootLayout({
               // Signal that core is ready
               window.__DRAMOVA_READY=true;
               document.dispatchEvent(new Event('dramova:ready'));
+              // Pre-fetch catalog semua platform di background
+              var pf=document.createElement('script');pf.src='/js/prefetch.js';document.body.appendChild(pf);
               // Define refreshIcons globally
               window.refreshIcons=function(){window.lucide?.createIcons?.();};
               // Refresh icons
