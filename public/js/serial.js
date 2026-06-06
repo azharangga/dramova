@@ -317,6 +317,7 @@
         const raw = D.unwrap(res) || {};
         const drama = raw.data || raw || {};
         const count = Number(drama.totalEpisodes || (Array.isArray(drama.episodes) ? drama.episodes.length : 0) || item.episodes || 0);
+        const details = drama.details || {};
         const result = {
           ...item,
           cover: drama.cover || item.cover,
@@ -326,7 +327,10 @@
           description: drama.description || drama.synopsis || item.description,
           episodes: count || item.episodes || 0,
           totalEpisodes: count || item.totalEpisodes || 0,
-          year: drama.year || item.year,
+          year: drama.year || details.release_date?.match(/\d{4}/)?.[0] || item.year,
+          genres: details.genres || drama.genres || item.genres || '',
+          network: details.network || drama.network || item.network || '',
+          country: details.country || drama.country || item.country || '',
         };
         heroDetailCache.set(item.id, result);
         return result;
@@ -353,6 +357,12 @@
         const synopsis = synopsisOf(it);
         const eps = D.episodeCount ? D.episodeCount(it) : Number(it.episodes || it.totalEpisodes || 0);
         const epsLabel = eps > 1 ? `${eps} ${D.t('common.episodes')}` : '';
+
+        const dot = `<span style="width:3px;height:3px;border-radius:50%;background:#777;display:inline-block;flex-shrink:0;"></span>`;
+        const metaHtml = [
+          epsLabel ? `<span>${epsLabel}</span>` : '',
+          it.network ? `<span>${escapeHtml(it.network)}</span>` : '',
+        ].filter(Boolean).join(dot);
         const activeClass = i === 0 ? 'is-active' : '';
         const loadAttr = i === 0 ? 'eager' : 'lazy';
         return `
@@ -372,8 +382,7 @@
                 ${D.cleanTitle?.(it.title) || it.title || ''}
               </h2>
               <p class="home-hero-meta mt-1.5 flex flex-wrap items-center gap-x-2" style="color: #d7d7d7;">
-                ${epsLabel ? `<span>${epsLabel}</span><span style="width:3px;height:3px;border-radius:50%;background:#777;display:inline-block;"></span>` : ''}
-                <span>Serial pilihan.</span>
+                ${metaHtml || `<span>${D.Platforms[platform]?.label || 'Serial'}</span>`}
               </p>
               ${synopsis ? `<p class="home-hero-synopsis mt-3 line-clamp-2">${synopsis}</p>` : ''}
               <span data-watch-href="${D.watchUrl(platform, it.id)}" class="hero-cta-watch mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-bold sm:mt-4 sm:px-5 sm:py-2.5 sm:text-sm"
