@@ -145,7 +145,3 @@ npm start
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `API_BASE_URL` | URL backend FastAPI | `http://localhost:5000` |
-
-## License
-
-This project is private and proprietary.
