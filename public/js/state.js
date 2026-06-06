@@ -773,6 +773,7 @@
 
   const SERIAL_PLATFORMS = [
     { id: 'kdrama', label: 'K-Drama', orientation: 'horizontal', type: 'series' },
+    { id: 'cdrama', label: 'C-Drama', orientation: 'horizontal', type: 'series' },
   ];
 
   const Store = {

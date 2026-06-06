@@ -9,7 +9,21 @@ export default function SeriesPage() {
         <div id="serialHeroDots" className="home-hero-dots absolute inset-x-0 z-10 flex justify-center gap-2"></div>
       </section>
 
-      <div className="serial-search-controls mt-6 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+      {/* Category tabs */}
+      <div className="serial-category-tabs mt-6 flex gap-2 overflow-x-auto no-scrollbar pb-0.5" role="tablist" aria-label="Kategori Serial">
+        <button id="serialTabKdrama" role="tab" aria-selected="true" data-serial-tab="kdrama"
+          className="serial-tab-btn inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition active:scale-95"
+          style={{ background: "var(--accent)", color: "var(--accent-control-text)", border: "1px solid transparent", letterSpacing: "0.5px" }}>
+          K-Drama
+        </button>
+        <button id="serialTabCdrama" role="tab" aria-selected="false" data-serial-tab="cdrama"
+          className="serial-tab-btn inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition active:scale-95"
+          style={{ background: "var(--bg-raised)", color: "var(--text-secondary)", border: "1px solid var(--border-muted)", letterSpacing: "0.5px" }}>
+          C-Drama
+        </button>
+      </div>
+
+      <div className="serial-search-controls mt-4 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
         <form id="serialSearchForm" autoComplete="off" className="flex h-12 min-w-0 items-center gap-2 px-4 transition" style={{ borderRadius: "9999px", background: "var(--bg-raised)", boxShadow: "var(--inset-border)" }}>
           <i data-lucide="search" className="h-4 w-4 shrink-0" style={{ color: "var(--text-secondary)" }}></i>
           <input id="serialSearchInput" type="search" placeholder="Cari judul serial..." data-i18n-placeholder="serial.search_placeholder" className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none" style={{ color: "var(--text-primary)" }} />

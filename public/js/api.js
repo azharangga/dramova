@@ -117,6 +117,17 @@
       detail: (id) => getJSON(`/kdrama/detail?id=${id}`),
       stream: (id, ep) => getJSON(`/kdrama/video?id=${id}&ep=${ep}`),
     },
+
+    cdrama: {
+      label: 'C-Drama',
+      orientation: 'horizontal',
+      home: (page = 1, filters = {}) => getJSON(`/cdrama/dramas?page=${page}&size=24${query(filters)}`),
+      more: (page, filters = {}) => getJSON(`/cdrama/dramas?page=${page}&size=24${query(filters)}`),
+      filters: () => getJSON('/cdrama/filters?maxPages=12'),
+      search: (q, filters = {}) => getJSON(`/cdrama/search?q=${encodeURIComponent(q)}&page=1&size=24${query(filters)}`),
+      detail: (id) => getJSON(`/cdrama/detail?id=${id}`),
+      stream: (id, ep) => getJSON(`/cdrama/video?id=${id}&ep=${ep}`),
+    },
   };
 
   window.DramSi = window.DramSi || {};

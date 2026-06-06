@@ -15,13 +15,50 @@
   const forYouGrid = document.getElementById('serialForYouGrid');
   const loadMoreBtn = document.getElementById('loadMoreBtn');
   const state = { page: 1, items: [], keyword: '', year: '', filterYears: [], availableYears: [], heroSeed: Math.random() };
-  const platform = 'kdrama';
-  const minFilterYear = 2022;
+  let platform = 'kdrama';
   let heroTimer = null;
   let heroIndex = 0;
   let heroSlides = [];
   let loadToken = 0;
   const heroDetailCache = new Map();
+
+  // ── Tab switching ──────────────────────────────────────────────────────────
+  const tabBtns = document.querySelectorAll('[data-serial-tab]');
+
+  function setActiveTab(newPlatform) {
+    platform = newPlatform;
+    tabBtns.forEach((btn) => {
+      const isActive = btn.dataset.serialTab === platform;
+      btn.setAttribute('aria-selected', String(isActive));
+      if (isActive) {
+        btn.style.background = 'var(--accent)';
+        btn.style.color = 'var(--accent-control-text)';
+        btn.style.borderColor = 'transparent';
+      } else {
+        btn.style.background = 'var(--bg-raised)';
+        btn.style.color = 'var(--text-secondary)';
+        btn.style.borderColor = 'var(--border-muted)';
+      }
+    });
+    // Reset search & filters when switching platform
+    searchInput.value = '';
+    state.keyword = '';
+    searchClear.hidden = true;
+    state.year = '';
+    state.filterYears = [];
+  }
+
+  tabBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.serialTab === platform) return;
+      setActiveTab(btn.dataset.serialTab);
+      heroDetailCache.clear();
+      loadFilters();
+      load(true);
+    });
+  });
+  // ──────────────────────────────────────────────────────────────────────────
+  const minFilterYear = 2022;
 
   function synopsisOf(item) {
     return item?.synopsis || item?.description || item?.introduction || item?.summary || '';
@@ -329,7 +366,7 @@
               <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-white"
                     style="background: rgba(18,18,18,0.62); border: 1px solid rgba(255,255,255,0.16); border-radius: 9999px; letter-spacing: 0.8px; backdrop-filter: blur(8px);">
                 <i data-lucide="clapperboard" class="h-3 w-3" style="color:rgba(255,255,255,0.78);"></i>
-                <span style="color:rgba(255,255,255,0.88);">K-Drama</span>
+                <span style="color:rgba(255,255,255,0.88);">${D.Platforms[platform]?.label || platform}</span>
               </span>
               <h2 class="home-hero-title mt-2.5 text-white">
                 ${D.cleanTitle?.(it.title) || it.title || ''}
