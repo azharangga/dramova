@@ -7,7 +7,7 @@ export default function Footer() {
             <a href="/" className="inline-flex items-center" aria-label="Dramova">
               <img src="/img/logo.png" alt="Dramova" className="h-6" style={{ width: "auto" }} />
             </a>
-            <p className="mt-4 max-w-lg text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }} data-i18n="footer.description">Platform streaming drama modern untuk menikmati berbagai cerita menarik, mulai dari drama pendek hingga serial favorit, dalam pengalaman menonton yang nyaman, ringan, dan immersive.</p>
+            <p className="mt-4 max-w-lg text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }} data-i18n="footer.description">Platform streaming modern untuk menikmati berbagai cerita menarik, mulai dari movie hingga serial favorit, dalam pengalaman menonton yang nyaman, ringan, dan immersive.</p>
           </div>
           <nav className="pt-1" aria-label="Navigasi footer">
             <p className="footer-heading" data-i18n="nav.footer">Navigasi</p>
@@ -16,7 +16,7 @@ export default function Footer() {
           <div className="pt-1">
             <p className="footer-heading" data-i18n="footer.features">Fitur Utama</p>
             <div className="mt-4 grid gap-3">
-              <div className="footer-feature"><i data-lucide="play-circle" className="h-4 w-4"></i><span data-i18n="footer.feature.platforms">Drama pendek dan serial dalam satu tempat</span></div>
+              <div className="footer-feature"><i data-lucide="play-circle" className="h-4 w-4"></i><span data-i18n="footer.feature.platforms">Movie dan serial dalam satu tempat</span></div>
               <div className="footer-feature"><i data-lucide="search" className="h-4 w-4"></i><span data-i18n="footer.feature.languages">Cari judul dari berbagai katalog</span></div>
               <div className="footer-feature"><i data-lucide="bookmark" className="h-4 w-4"></i><span data-i18n="footer.feature.history">Lanjutkan tontonan dan simpan favorit</span></div>
             </div>

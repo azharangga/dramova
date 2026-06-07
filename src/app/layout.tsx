@@ -3,9 +3,9 @@ import Script from "next/script";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "Dramova · Drama Pendek dan Serial",
+  title: "Dramova · Movie dan Serial",
   description:
-    "Platform streaming drama modern untuk menikmati berbagai cerita menarik, mulai dari drama pendek hingga serial favorit, dalam pengalaman menonton yang nyaman, ringan, dan immersive.",
+    "Platform streaming modern untuk menikmati berbagai cerita menarik, mulai dari movie hingga serial favorit, dalam pengalaman menonton yang nyaman, ringan, dan immersive.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: "/img/favicon.png",
