@@ -1,7 +1,7 @@
 <h1 align="center">Dramova</h1>
 
 <p align="center">
-  Platform streaming drama pendek & serial modern
+  Platform streaming film, movie & serial modern
 </p>
 
 <p align="center">
@@ -20,7 +20,7 @@
 
 ## About
 
-Dramova adalah platform streaming drama pendek dan serial yang dibangun dengan arsitektur hybrid. Next.js digunakan sebagai shell untuk routing, SSR, dan API proxy, sementara seluruh interaktivitas UI menggunakan vanilla JavaScript. Pendekatan ini menghasilkan performa ringan, zero React runtime overhead saat playback video, dan pengalaman mendekati native app.
+Dramova adalah platform streaming film, movie, dan serial yang dibangun dengan arsitektur hybrid. Next.js digunakan sebagai shell untuk routing, SSR, dan API proxy, sementara seluruh interaktivitas UI menggunakan vanilla JavaScript. Pendekatan ini menghasilkan performa ringan, zero React runtime overhead saat playback video, dan pengalaman mendekati native app.
 
 ## Features
 

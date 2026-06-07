@@ -1,4 +1,4 @@
-import Script from "next/script";
+import PageScript from "@/components/PageScript";
 import PageShell from "@/components/PageShell";
 
 export default function WatchPage() {
@@ -31,10 +31,7 @@ export default function WatchPage() {
       </section>
       <div id="epSheetBackdrop" className="md:hidden hidden fixed inset-0 z-[80] bg-black/60" style={{ backdropFilter: "blur(4px)" }}></div>
       <aside id="epSheet" role="dialog" aria-modal="true" className="md:hidden sheet-translate fixed inset-x-0 bottom-0 z-[81] flex max-h-[78vh] flex-col overflow-hidden rounded-t-2xl pb-[env(safe-area-inset-bottom)]" style={{ borderTop: "1px solid var(--border-color)", background: "var(--sheet-bg)", boxShadow: "var(--shadow-heavy)" }}><div className="sheet-drag-zone mx-auto mt-3 mb-1 h-1 w-10 rounded-full" style={{ background: "var(--border-muted)" }}></div><div className="sheet-drag-zone flex items-center justify-between px-5 py-3" style={{ borderBottom: "1px solid var(--border-color)" }}><div><h3 id="epSheetTitle" className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Episode</h3><p id="epSheetSub" className="text-xs" style={{ color: "var(--text-secondary)" }}>—</p></div><button id="epSheetCloseBtn" aria-label="Tutup" className="grid h-8 w-8 place-items-center transition active:scale-90" style={{ borderRadius: "50%", background: "var(--bg-hover)", color: "var(--text-secondary)" }}><i data-lucide="x" className="h-4 w-4"></i></button></div><div id="epSheetScroller" className="overflow-y-auto px-5 py-4"><div id="epListMobile" className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(50px,1fr))]"></div></div></aside>
-      <Script id="page-watch" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
-        function _load(){var s=document.createElement('script');s.src='/js/watch.js';document.body.appendChild(s);}
-        if(window.__DRAMOVA_READY)_load();else document.addEventListener('dramova:ready',_load,{once:true});
-      `}} />
+      <PageScript id="page-watch" src="/js/watch.js" />
     </PageShell>
   );
 }

@@ -31,6 +31,7 @@
   let heroTimer = null;
   let heroIndex = 0;
   let heroSlides = [];
+  let heroRenderToken = 0;
   let loadToken = 0;
   const heroDetailCache = new Map();
 
@@ -459,19 +460,21 @@
 
   function readyHeroItems(items) {
     const ready = (items || []).filter(isHeroReady);
-    return ready.length ? ready : (items || []).filter((item) => item?.id && item?.title && hasHeroImage(item));
+    return ready;
   }
 
   function renderHero(items) {
+    const renderToken = ++heroRenderToken;
     heroSlides = pickHeroItems(items, 5);
     if (!heroSlides.length) {
-      heroTrack.innerHTML = '';
+      heroTrack.innerHTML = D.buildHeroSkeleton ? D.buildHeroSkeleton() : '';
       heroDots.innerHTML = '';
       return;
     }
 
     const firstCover = heroSlides[0]?.banner || heroSlides[0]?.cover || heroSlides[0]?.image || '';
     const doRender = () => {
+      if (renderToken !== heroRenderToken) return;
       heroTrack.innerHTML = heroSlides.map((it, i) => {
         const cover = D.heroImage ? D.heroImage(it) : (it.banner || it.detailCover || it.cover || it.image || D.placeholderImg(it.title));
         const synopsis = synopsisOf(it);
@@ -540,7 +543,14 @@
       });
     };
 
-    doRender();
+    if (firstCover) {
+      const img = new Image();
+      img.onload = doRender;
+      img.onerror = doRender;
+      img.src = firstCover;
+    } else {
+      doRender();
+    }
   }
 
   // ── Normal load (catalog biasa, bukan search) ──────────────────────────────
@@ -585,7 +595,7 @@
 
       if (reset) {
         state.heroItems = [];
-        const heroPool = pickHeroItems(state.items, 5);
+        const heroPool = pickHeroItems(state.items, 12);
         enrichHeroItems(heroPool).then((readyHero) => {
           if (token !== loadToken) return;
           state.heroItems = readyHeroItems(readyHero);

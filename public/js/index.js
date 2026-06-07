@@ -16,6 +16,7 @@
   let heroTimer = null;
   let heroIndex = 0;
   let heroSlides = [];
+  let heroRenderToken = 0;
   let homeLoadToken = 0;
   const SERIAL_PLATFORMS = (D.SERIAL_PLATFORMS || []).map((p) => p.id);
   const MOVIE_PLATFORMS = (D.MOVIE_PLATFORMS || []).map((p) => p.id);
@@ -83,6 +84,26 @@
     const withSynopsis = (items || []).filter((item) => synopsisOf(item));
     const pool = withSynopsis.length ? withSynopsis : (items || []).slice(0, limit * 2);
     return shuffle(pool).slice(0, limit);
+  }
+
+  function hasHeroImage(item) {
+    return Boolean(item?.banner || item?.detailCover || item?.cover || item?.image);
+  }
+
+  function hasHeroMeta(item) {
+    const platform = item?.__platform || state.platform;
+    const isMovie = D.platformType?.(platform) === 'movie';
+    return isMovie
+      ? Boolean(getItemYear(item) || normalizeMetaValue(item?.country))
+      : Boolean(episodeCount(item) || normalizeMetaValue(item?.network) || normalizeMetaValue(item?.country));
+  }
+
+  function isHeroReady(item) {
+    return Boolean(item?.id && item?.title && hasHeroImage(item) && synopsisOf(item).trim() && hasHeroMeta(item));
+  }
+
+  function readyHeroItems(items) {
+    return (items || []).filter(isHeroReady);
   }
 
   function episodeCount(item) {
@@ -165,7 +186,7 @@
   }
 
   async function enrichHomeHero(items) {
-    const heroPool = pickHeroItems(items, 5);
+    const heroPool = pickHeroItems(items, 12);
     return Promise.all(heroPool.map(async (item) => {
       const platform = item.__platform || state.platform;
       const detail = D.Platforms?.[platform]?.detail;
@@ -187,14 +208,18 @@
   }
 
   function buildHero(items) {
-    heroSlides = pickHeroItems(items, 5);
+    const renderToken = ++heroRenderToken;
+    heroSlides = pickHeroItems(readyHeroItems(items), 5);
     if (heroSlides.length === 0) {
-      heroTrack.innerHTML = '';
+      heroTrack.innerHTML = D.buildHeroSkeleton ? D.buildHeroSkeleton() : '';
       heroDots.innerHTML = '';
       return;
     }
 
-    heroTrack.innerHTML = heroSlides.map((it, i) => {
+    const firstCover = heroSlides[0]?.banner || heroSlides[0]?.detailCover || heroSlides[0]?.cover || heroSlides[0]?.image || '';
+    const doRender = () => {
+      if (renderToken !== heroRenderToken) return;
+      heroTrack.innerHTML = heroSlides.map((it, i) => {
       const platform = it.__platform || state.platform;
       const platformLabel = (D.Platforms[platform] && D.Platforms[platform].label) || platform;
       const isMovie = D.platformType?.(platform) === 'movie';
@@ -276,6 +301,16 @@
       if (img.complete && img.naturalWidth) applyCrop();
       else img.addEventListener('load', applyCrop, { once: true });
     });
+    };
+
+    if (firstCover) {
+      const img = new Image();
+      img.onload = doRender;
+      img.onerror = doRender;
+      img.src = firstCover;
+    } else {
+      doRender();
+    }
   }
 
   function moveHero(idx) {
@@ -432,7 +467,6 @@
   function renderHomeSections(items, platform) {
     const sections = homeSections(items);
 
-    buildHero(sections.hero);
     renderRail(trendingRail, sections.trending.slice(0, 12), platform, { ranked: true });
     renderRail(newReleaseRail, sections.newRelease.slice(0, 12), platform);
 

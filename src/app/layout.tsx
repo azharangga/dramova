@@ -44,12 +44,12 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
-        {/* Tailwind CDN for runtime utility classes used by vanilla JS */}
-        <script src="https://cdn.tailwindcss.com" />
+        {/* Tailwind CDN fallback only; primary Tailwind comes from globals.css. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-          tailwind.config = {
+          window.tailwind = window.tailwind || {};
+          window.tailwind.config = {
             darkMode: ['class', '[data-theme="dark"]'],
             theme: {
               extend: {
@@ -79,6 +79,26 @@ export default function RootLayout({
               },
             },
           };
+          (function(){
+            function hasTailwindUtilities(){
+              var el=document.createElement('div');
+              el.className='grid hidden';
+              document.documentElement.appendChild(el);
+              var styles=window.getComputedStyle(el);
+              var ok=styles.display==='none';
+              el.remove();
+              return ok;
+            }
+            function loadFallback(){
+              if(hasTailwindUtilities())return;
+              var s=document.createElement('script');
+              s.src='https://cdn.tailwindcss.com';
+              s.defer=true;
+              document.head.appendChild(s);
+            }
+            if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadFallback,{once:true});
+            else loadFallback();
+          })();
         `,
           }}
         />
