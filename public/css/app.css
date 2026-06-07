@@ -1,5 +1,5 @@
 /* ===== Dramova · App Styles — Spotify-inspired Design System =======
-   Dark immersive theme: #0f0f0f base, #1ed760 accent, pill geometry.
+   Dark immersive theme: #0f0f0f base, #2BA641 accent, pill geometry.
    Light mode: #f5f5f7 base, clean neutral whites, solid green accent.
    ================================================================= */
 
@@ -19,13 +19,13 @@
   --text-secondary:#a0a0a0;
   --text-tertiary: #5a5a5a;
   --text-on-accent:#06110a;
-  --accent:        #1ed760;
-  --accent-hover:  #1fdf64;
-  --accent-dark:   #1db954;
-  --accent-muted:  rgba(30,215,96,0.15);
-  --accent-control-bg: #1ed760;
+  --accent:        #2BA641;
+  --accent-hover:  #32B94B;
+  --accent-dark:   #238A36;
+  --accent-muted:  rgba(43,166,65,0.16);
+  --accent-control-bg: #2BA641;
   --accent-control-text: #06110a;
-  --accent-control-border: #1ed760;
+  --accent-control-border: #2BA641;
   --control-bg:    #1f1f1f;
   --control-hover: #292929;
   --control-text:  #d6d6d6;
@@ -44,7 +44,7 @@
   --shadow-medium: rgba(0,0,0,0.35) 0px 6px 16px;
   --shadow-soft:   rgba(0,0,0,0.2) 0px 2px 8px;
   --inset-border:  rgb(15,15,15) 0px 1px 0px, rgb(100,100,100) 0px 0px 0px 1px inset;
-  --inset-border-focus: rgb(15,15,15) 0px 1px 0px, #1ed760 0px 0px 0px 2px inset;
+  --inset-border-focus: rgb(15,15,15) 0px 1px 0px, #2BA641 0px 0px 0px 2px inset;
   --radius-sm:     6px;
   --radius-md:     10px;
   --radius-lg:     16px;
@@ -66,13 +66,13 @@ html.light {
   --text-secondary:#4b5060;
   --text-tertiary: #7a7f8e;
   --text-on-accent:#ffffff;
-  --accent:        #16a34a;
-  --accent-hover:  #15803d;
-  --accent-dark:   #166534;
-  --accent-muted:  rgba(22,163,74,0.1);
-  --accent-control-bg: #16a34a;
+  --accent:        #2BA641;
+  --accent-hover:  #238A36;
+  --accent-dark:   #1D7330;
+  --accent-muted:  rgba(43,166,65,0.11);
+  --accent-control-bg: #2BA641;
   --accent-control-text: #ffffff;
-  --accent-control-border: #15803d;
+  --accent-control-border: #238A36;
   --control-bg:    #ffffff;
   --control-hover: #f0fdf4;
   --control-text:  #1a1c20;
@@ -91,7 +91,7 @@ html.light {
   --shadow-medium: rgba(0,0,0,0.06) 0px 4px 16px, rgba(0,0,0,0.03) 0px 2px 6px;
   --shadow-soft:   rgba(0,0,0,0.04) 0px 2px 8px;
   --inset-border:  rgba(0,0,0,0.06) 0px 1px 0px, rgba(0,0,0,0.12) 0px 0px 0px 1px inset;
-  --inset-border-focus: rgba(0,0,0,0.06) 0px 1px 0px, #16a34a 0px 0px 0px 2px inset;
+  --inset-border-focus: rgba(0,0,0,0.06) 0px 1px 0px, #2BA641 0px 0px 0px 2px inset;
 }
 
 /* ── Reset & Base ─────────────────────────────────────────────── */
@@ -99,11 +99,6 @@ html.light {
 html, body { overscroll-behavior-y: contain; }
 
 /* Logo theme switching */
-.logo-light { display: none; }
-.logo-dark { display: block; }
-html.light .logo-light { display: block; }
-html.light .logo-dark { display: none; }
-
 /* Theme toggle icon visibility — CSS-driven, no flash */
 .icon-sun { display: block; }
 .icon-moon { display: none; }
@@ -719,18 +714,18 @@ img.is-loaded {
   text-transform: uppercase;
   text-decoration: none;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
-  box-shadow: 0 4px 14px rgba(30,215,96,0.2);
+  box-shadow: 0 4px 14px rgba(43,166,65,0.22);
 }
 .detail-play-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(30,215,96,0.3);
+  box-shadow: 0 6px 18px rgba(43,166,65,0.32);
 }
 .detail-play-btn:active { transform: scale(0.96); }
 html.light .detail-play-btn {
-  box-shadow: 0 4px 14px rgba(22,163,74,0.15);
+  box-shadow: 0 4px 14px rgba(43,166,65,0.16);
 }
 html.light .detail-play-btn:hover {
-  box-shadow: 0 6px 18px rgba(22,163,74,0.25);
+  box-shadow: 0 6px 18px rgba(43,166,65,0.26);
 }
 
 .detail-action-icon {
@@ -852,8 +847,8 @@ html.light .detail-play-btn:hover {
 @keyframes spinSlow { to { transform: rotate(360deg); } }
 @keyframes toastSpin { to { transform: rotate(360deg); } }
 @keyframes pulse-green {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(30,215,96,0.4); }
-  50%       { box-shadow: 0 0 0 8px rgba(30,215,96,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(43,166,65,0.42); }
+  50%       { box-shadow: 0 0 0 8px rgba(43,166,65,0); }
 }
 @keyframes ripple-anim { to { transform: scale(1); opacity: 0; } }
 @keyframes float {
@@ -1365,7 +1360,7 @@ html.light .home-hero .skeleton {
 }
 .hero-cta-watch:hover {
   transform: translateY(-2px);
-  box-shadow: rgba(30,215,96,0.28) 0px 14px 36px, rgba(0,0,0,0.4) 0px 6px 20px !important;
+  box-shadow: rgba(43,166,65,0.3) 0px 14px 36px, rgba(0,0,0,0.4) 0px 6px 20px !important;
 }
 .hero-cta-watch:active {
   transform: translateY(0) scale(0.97);
@@ -1754,13 +1749,13 @@ body.watch-loading #epSheetSub { min-width: 72px; min-height: 14px; }
 
 /* ── Gradient text ────────────────────────────────────────────── */
 .text-gradient-green {
-  background: linear-gradient(135deg, #1ed760, #17a84a);
+  background: linear-gradient(135deg, #2BA641, #238A36);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 html.light .text-gradient-green {
-  background: linear-gradient(135deg, #16a34a, #166534);
+  background: linear-gradient(135deg, #2BA641, #1D7330);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1854,15 +1849,15 @@ html.light .text-gradient-green {
 
 /* ── PWA install card ─────────────────────────────────────────── */
 #pwaInstallCard {
-  background: linear-gradient(135deg, var(--accent-muted), rgba(30,215,96,0.03));
-  border: 1px solid rgba(30,215,96,0.2);
+  background: linear-gradient(135deg, var(--accent-muted), rgba(43,166,65,0.04));
+  border: 1px solid rgba(43,166,65,0.22);
   border-radius: var(--radius-lg);
   padding: 20px;
   animation: fadeIn 0.4s ease-out;
 }
 html.light #pwaInstallCard {
-  background: linear-gradient(135deg, var(--accent-muted), rgba(22,163,74,0.04));
-  border: 1px solid rgba(22,163,74,0.2);
+  background: linear-gradient(135deg, var(--accent-muted), rgba(43,166,65,0.04));
+  border: 1px solid rgba(43,166,65,0.2);
 }
 
 /* ── Offline indicator ────────────────────────────────────────── */
@@ -2474,13 +2469,13 @@ input[type="search"] {
 .shorts-feed__action-btn--primary {
   width: 52px;
   height: 52px;
-  background: #1ed760;
+  background: #2BA641;
   border: none;
   color: #06110a;
-  box-shadow: 0 4px 16px rgba(30,215,96,0.35);
+  box-shadow: 0 4px 16px rgba(43,166,65,0.36);
 }
 .shorts-feed__action-btn--primary:active {
-  background: #1db954;
+  background: #238A36;
 }
 .shorts-feed__action-btn--primary svg {
   fill: #06110a;

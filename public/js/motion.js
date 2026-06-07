@@ -161,8 +161,8 @@
       progressBar.style.cssText = `
         position: fixed; top: 0; left: 0; z-index: 9999;
         height: 2px; width: 0%;
-        background: #1ed760;
-        box-shadow: 0 0 8px rgba(30,215,96,0.6);
+        background: #2BA641;
+        box-shadow: 0 0 8px rgba(43,166,65,0.6);
         pointer-events: none;
         transition: none;
       `;

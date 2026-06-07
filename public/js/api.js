@@ -66,68 +66,102 @@
     return text ? `&${text}` : '';
   }
 
+  const categoryPath = {
+    dramanova: 'shorts/dramanova',
+    goodshort: 'shorts/goodshort',
+    dramabite: 'shorts/dramabite',
+    dramabox: 'shorts/dramabox',
+    kdrama: 'serial/kdrama',
+    cdrama: 'serial/cdrama',
+    varietyshow: 'serial/varietyshow',
+    jdrama: 'serial/jdrama',
+    thaidrama: 'serial/thaidrama',
+    kmovie: 'movie/kmovie',
+    cmovie: 'movie/cmovie',
+    jmovie: 'movie/jmovie',
+    thaimovie: 'movie/thaimovie',
+  };
+
+  function apiPath(platform, path) {
+    return `/${categoryPath[platform]}${path}`;
+  }
+
+  function createSerialPlatform(platform, label) {
+    return {
+      label,
+      orientation: 'horizontal',
+      home: (page = 1, filters = {}) => getJSON(apiPath(platform, `/dramas?page=${page}&size=24${query(filters)}`)),
+      more: (page, filters = {}) => getJSON(apiPath(platform, `/dramas?page=${page}&size=24${query(filters)}`)),
+      filters: () => getJSON(apiPath(platform, '/filters?maxPages=12')),
+      search: (q, filters = {}) => getJSON(apiPath(platform, `/search?q=${encodeURIComponent(q)}&page=1&size=24${query(filters)}`)),
+      detail: (id) => getJSON(apiPath(platform, `/detail?id=${id}`)),
+      stream: (id, ep) => getJSON(apiPath(platform, `/video?id=${id}&ep=${ep}`)),
+    };
+  }
+
+  function createMoviePlatform(platform, label) {
+    return {
+      label,
+      orientation: 'horizontal',
+      home: (page = 1, filters = {}) => getJSON(apiPath(platform, `/dramas?page=${page}&size=24${query(filters)}`)),
+      more: (page, filters = {}) => getJSON(apiPath(platform, `/dramas?page=${page}&size=24${query(filters)}`)),
+      filters: () => getJSON(apiPath(platform, '/filters?maxPages=12')),
+      search: (q, filters = {}) => getJSON(apiPath(platform, `/search?q=${encodeURIComponent(q)}&page=1&size=24${query(filters)}`)),
+      detail: (id) => getJSON(apiPath(platform, `/detail?id=${id}`)),
+      stream: (id) => getJSON(apiPath(platform, `/video?id=${id}`)),
+    };
+  }
+
   const Platforms = {
     dramanova: {
       label: 'DramaNova',
       orientation: 'horizontal',
-      home: (page = 1, l) => getJSON(`/dramanova/dramas?lang=${lang('dramanova', l)}&page=${page}&size=24`),
-      more: (page, l) => getJSON(`/dramanova/dramas?lang=${lang('dramanova', l)}&page=${page}&size=24`),
-      search: (q, l) => getJSON(`/dramanova/search?q=${encodeURIComponent(q)}&lang=${lang('dramanova', l)}`),
-      detail: (id, l) => getJSON(`/dramanova/detail?id=${id}&lang=${lang('dramanova', l)}`),
-      stream: (id, ep, l) => getJSON(`/dramanova/video?id=${id}&ep=${ep}&lang=${lang('dramanova', l)}`),
+      home: (page = 1, l) => getJSON(apiPath('dramanova', `/dramas?lang=${lang('dramanova', l)}&page=${page}&size=24`)),
+      more: (page, l) => getJSON(apiPath('dramanova', `/dramas?lang=${lang('dramanova', l)}&page=${page}&size=24`)),
+      search: (q, l) => getJSON(apiPath('dramanova', `/search?q=${encodeURIComponent(q)}&lang=${lang('dramanova', l)}`)),
+      detail: (id, l) => getJSON(apiPath('dramanova', `/detail?id=${id}&lang=${lang('dramanova', l)}`)),
+      stream: (id, ep, l) => getJSON(apiPath('dramanova', `/video?id=${id}&ep=${ep}&lang=${lang('dramanova', l)}`)),
     },
 
     goodshort: {
       label: 'GoodShort',
       orientation: 'vertical',
-      home: (page = 1, l) => getJSON(`/goodshort/home?page=${page}&channel=${lang('goodshort', l)}`),
-      more: (page, l) => getJSON(`/goodshort/home?page=${page}&channel=${lang('goodshort', l)}`),
-      search: (q) => getJSON(`/goodshort/search?q=${encodeURIComponent(q)}`),
-      detail: (id) => getJSON(`/goodshort/detail?id=${id}`),
-      stream: (id, ep) => getJSON(`/goodshort/stream_fast?id=${id}&ep=${ep}&quality=720p`),
+      home: (page = 1, l) => getJSON(apiPath('goodshort', `/home?page=${page}&channel=${lang('goodshort', l)}`)),
+      more: (page, l) => getJSON(apiPath('goodshort', `/home?page=${page}&channel=${lang('goodshort', l)}`)),
+      search: (q) => getJSON(apiPath('goodshort', `/search?q=${encodeURIComponent(q)}`)),
+      detail: (id) => getJSON(apiPath('goodshort', `/detail?id=${id}`)),
+      stream: (id, ep) => getJSON(apiPath('goodshort', `/stream_fast?id=${id}&ep=${ep}&quality=720p`)),
     },
 
     dramabite: {
       label: 'DramaBite',
       orientation: 'vertical',
-      home: (page = 0, l) => getJSON(`/dramabite/foryou?lang=${lang('dramabite', l)}&page=${page}`),
-      more: (page, l) => getJSON(`/dramabite/foryou?lang=${lang('dramabite', l)}&page=${page}`),
-      search: (q, l) => getJSON(`/dramabite/search?q=${encodeURIComponent(q)}&lang=${lang('dramabite', l)}`),
-      detail: (id, l) => getJSON(`/dramabite/detail?id=${id}&lang=${lang('dramabite', l)}`),
-      stream: (id, ep, l) => getJSON(`/dramabite/episode?id=${id}&ep=${ep}&lang=${lang('dramabite', l)}`),
+      home: (page = 0, l) => getJSON(apiPath('dramabite', `/foryou?lang=${lang('dramabite', l)}&page=${page}`)),
+      more: (page, l) => getJSON(apiPath('dramabite', `/foryou?lang=${lang('dramabite', l)}&page=${page}`)),
+      search: (q, l) => getJSON(apiPath('dramabite', `/search?q=${encodeURIComponent(q)}&lang=${lang('dramabite', l)}`)),
+      detail: (id, l) => getJSON(apiPath('dramabite', `/detail?id=${id}&lang=${lang('dramabite', l)}`)),
+      stream: (id, ep, l) => getJSON(apiPath('dramabite', `/episode?id=${id}&ep=${ep}&lang=${lang('dramabite', l)}`)),
     },
 
     dramabox: {
       label: 'DramaBox',
       orientation: 'vertical',
-      home: (page = 1, l) => getJSON(`/dramabox/home?page=${page}&pageSize=24&lang=${lang('dramabox', l)}`),
-      more: (page, l) => getJSON(`/dramabox/home?page=${page}&pageSize=24&lang=${lang('dramabox', l)}`),
-      search: (q, l) => getJSON(`/dramabox/search?q=${encodeURIComponent(q)}&page=1&lang=${lang('dramabox', l)}`),
-      detail: (id, l) => getJSON(`/dramabox/detail?id=${id}&lang=${lang('dramabox', l)}`),
-      stream: (id, ep, l) => getJSON(`/dramabox/play?id=${id}&ep=${ep}&lang=${lang('dramabox', l)}`),
+      home: (page = 1, l) => getJSON(apiPath('dramabox', `/home?page=${page}&pageSize=24&lang=${lang('dramabox', l)}`)),
+      more: (page, l) => getJSON(apiPath('dramabox', `/home?page=${page}&pageSize=24&lang=${lang('dramabox', l)}`)),
+      search: (q, l) => getJSON(apiPath('dramabox', `/search?q=${encodeURIComponent(q)}&page=1&lang=${lang('dramabox', l)}`)),
+      detail: (id, l) => getJSON(apiPath('dramabox', `/detail?id=${id}&lang=${lang('dramabox', l)}`)),
+      stream: (id, ep, l) => getJSON(apiPath('dramabox', `/play?id=${id}&ep=${ep}&lang=${lang('dramabox', l)}`)),
     },
 
-    kdrama: {
-      label: 'K-Drama',
-      orientation: 'horizontal',
-      home: (page = 1, filters = {}) => getJSON(`/kdrama/dramas?page=${page}&size=24${query(filters)}`),
-      more: (page, filters = {}) => getJSON(`/kdrama/dramas?page=${page}&size=24${query(filters)}`),
-      filters: () => getJSON('/kdrama/filters?maxPages=12'),
-      search: (q, filters = {}) => getJSON(`/kdrama/search?q=${encodeURIComponent(q)}&page=1&size=24${query(filters)}`),
-      detail: (id) => getJSON(`/kdrama/detail?id=${id}`),
-      stream: (id, ep) => getJSON(`/kdrama/video?id=${id}&ep=${ep}`),
-    },
-
-    cdrama: {
-      label: 'C-Drama',
-      orientation: 'horizontal',
-      home: (page = 1, filters = {}) => getJSON(`/cdrama/dramas?page=${page}&size=24${query(filters)}`),
-      more: (page, filters = {}) => getJSON(`/cdrama/dramas?page=${page}&size=24${query(filters)}`),
-      filters: () => getJSON('/cdrama/filters?maxPages=12'),
-      search: (q, filters = {}) => getJSON(`/cdrama/search?q=${encodeURIComponent(q)}&page=1&size=24${query(filters)}`),
-      detail: (id) => getJSON(`/cdrama/detail?id=${id}`),
-      stream: (id, ep) => getJSON(`/cdrama/video?id=${id}&ep=${ep}`),
-    },
+    kdrama: createSerialPlatform('kdrama', 'K-Drama'),
+    cdrama: createSerialPlatform('cdrama', 'C-Drama'),
+    varietyshow: createSerialPlatform('varietyshow', 'Variety Show'),
+    jdrama: createSerialPlatform('jdrama', 'J-Drama'),
+    thaidrama: createSerialPlatform('thaidrama', 'Thai Drama'),
+    kmovie: createMoviePlatform('kmovie', 'K-Movie'),
+    cmovie: createMoviePlatform('cmovie', 'C-Movie'),
+    jmovie: createMoviePlatform('jmovie', 'J-Movie'),
+    thaimovie: createMoviePlatform('thaimovie', 'Thai Movie'),
   };
 
   window.DramSi = window.DramSi || {};

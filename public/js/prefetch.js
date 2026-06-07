@@ -101,8 +101,8 @@
    */
   function prefetchAll() {
     const allPlatforms = [
-      ...(D.PLATFORMS || []).filter((p) => !p.disabled).map((p) => p.id),
       ...(D.SERIAL_PLATFORMS || []).map((p) => p.id),
+      ...(D.MOVIE_PLATFORMS || []).map((p) => p.id),
     ];
     // Crawl semua paralel tanpa saling tunggu
     allPlatforms.forEach((plat) => crawl(plat));

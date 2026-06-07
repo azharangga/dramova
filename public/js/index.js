@@ -16,9 +16,12 @@
   let heroTimer = null;
   let heroIndex = 0;
   let heroSlides = [];
-  const SERIAL_PLATFORM = 'kdrama';
+  let homeLoadToken = 0;
+  const SERIAL_PLATFORMS = (D.SERIAL_PLATFORMS || []).map((p) => p.id);
+  const MOVIE_PLATFORMS = (D.MOVIE_PLATFORMS || []).map((p) => p.id);
+  const storedHomeCat = D.Store.get(D.STORAGE.HOME_CAT, 'all') || 'all';
   const state = {
-    platform: D.Store.get(D.STORAGE.HOME_CAT, 'all') || 'all',
+    platform: storedHomeCat === 'shorts' ? 'all' : storedHomeCat,
     page: 1,
     items: [],
     sectionItems: null,
@@ -29,15 +32,15 @@
 
   function syncPlatformButton(platform = state.platform) {
     if (!homePlatformLabel) return;
-    const labels = { all: D.t('discover.cat_all'), shorts: 'Shorts', serial: 'Serial' };
+    const labels = { all: D.t('discover.cat_all'), serial: 'Serial', movie: 'Movie' };
     homePlatformLabel.textContent = labels[platform] || D.t('discover.cat_all');
   }
 
   function platformItems() {
     return [
       { value: 'all', label: D.t('discover.cat_all') },
-      { value: 'shorts', label: 'Shorts', sub: D.t('discover.cat_shorts_sub') },
       { value: 'serial', label: 'Serial', sub: D.t('discover.cat_serial_sub') },
+      { value: 'movie', label: 'Movie', sub: D.t('discover.cat_movie_sub') },
     ];
   }
 
@@ -90,6 +93,23 @@
     return item?.synopsis || item?.description || item?.introduction || item?.summary || '';
   }
 
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[char]));
+  }
+
+  function normalizeMetaValue(value) {
+    return Array.isArray(value) ? value.filter(Boolean).join(', ') : String(value || '').trim();
+  }
+
+  function getItemYear(item) {
+    const direct = String(item?.year || item?.releaseYear || '').trim();
+    if (/^(19|20)\d{2}$/.test(direct)) return direct;
+    const titleMatch = String(item?.title || '').match(/\b(19|20)\d{2}\b/);
+    return titleMatch ? titleMatch[0] : '';
+  }
+
   function mergeDetailItem(item, drama) {
     if (!drama) return item;
     const count = episodeCount(drama);
@@ -107,6 +127,9 @@
       episodes: Array.isArray(drama.episodes) ? drama.episodes : item.episodes,
       isCompleted: drama.isCompleted ?? item.isCompleted,
       year: drama.year || item.year,
+      network: drama.network || drama.details?.network || item.network || '',
+      country: drama.country || drama.details?.country || item.country || '',
+      genres: drama.genres || drama.details?.genres || item.genres || '',
     };
   }
 
@@ -141,6 +164,28 @@
     return enriched;
   }
 
+  async function enrichHomeHero(items) {
+    const heroPool = pickHeroItems(items, 5);
+    return Promise.all(heroPool.map(async (item) => {
+      const platform = item.__platform || state.platform;
+      const detail = D.Platforms?.[platform]?.detail;
+      if (!detail || !item?.id) return item;
+      try {
+        const cacheKey = `${platform}:${item.id}`;
+        let data = detailCache.get(cacheKey);
+        if (!data) {
+          const res = await detail(item.id);
+          data = D.unwrap(res) || {};
+          detailCache.set(cacheKey, data);
+        }
+        const drama = data.data || data.drama || data;
+        return mergeDetailItem(item, drama);
+      } catch (_) {
+        return item;
+      }
+    }));
+  }
+
   function buildHero(items) {
     heroSlides = pickHeroItems(items, 5);
     if (heroSlides.length === 0) {
@@ -152,10 +197,18 @@
     heroTrack.innerHTML = heroSlides.map((it, i) => {
       const platform = it.__platform || state.platform;
       const platformLabel = (D.Platforms[platform] && D.Platforms[platform].label) || platform;
+      const isMovie = D.platformType?.(platform) === 'movie';
       const cover = D.heroImage ? D.heroImage(it) : (it.banner || it.detailCover || it.cover || it.image || D.placeholderImg(it.title));
       const eps = episodeCount(it);
       const epsLabel = eps > 0 && !(platform === 'kdrama' && eps <= 1) ? `${eps} ${D.t('common.episodes')}` : '';
-      const choiceLabel = 'Drama pilihan.';
+      const dot = `<span style="width:3px;height:3px;border-radius:50%;background:#777;display:inline-block;flex-shrink:0;"></span>`;
+      const metaParts = isMovie
+        ? [getItemYear(it), normalizeMetaValue(it.country)]
+        : [epsLabel, normalizeMetaValue(it.network)];
+      const metaHtml = metaParts
+        .filter(Boolean)
+        .map((value) => `<span>${escapeHtml(value)}</span>`)
+        .join(dot);
       const synopsis = synopsisOf(it);
       const activeClass = i === 0 ? 'is-active' : '';
       const loadAttr = i === 0 ? 'eager' : 'lazy';
@@ -179,12 +232,9 @@
             </h3>
             <!-- Meta -->
             <p class="home-hero-meta mt-1.5 flex flex-wrap items-center gap-x-2" style="color: #d7d7d7;">
-              ${epsLabel ? `<span>${epsLabel}</span><span style="width:3px;height:3px;border-radius:50%;background:#777;display:inline-block;"></span>` : ''}
-              <span class="line-clamp-1" style="max-width: 50ch;">${choiceLabel}</span>
+              ${metaHtml || `<span>${platformLabel}</span>`}
             </p>
-            <p class="home-hero-synopsis mt-3 line-clamp-2">
-              ${synopsis}
-            </p>
+            ${synopsis ? `<p class="home-hero-synopsis mt-3 line-clamp-2">${synopsis}</p>` : ''}
             <!-- CTA — goes directly to watch -->
             <span data-watch-href="${D.watchUrl(platform, it.id)}" class="hero-cta-watch mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-bold sm:mt-4 sm:px-5 sm:py-2.5 sm:text-sm"
                   style="border-radius: 9999px; background: var(--accent-control-bg); color: var(--accent-control-text); border: 1px solid var(--accent-control-border); letter-spacing: 1.4px; text-transform: uppercase; box-shadow: rgba(0,0,0,0.5) 0px 8px 24px; cursor: pointer; position: relative; z-index: 5;">
@@ -197,7 +247,7 @@
     heroDots.innerHTML = heroSlides.map((_, i) => `
       <button type="button" class="hero-dot hero-dot-btn ${i === 0 ? 'is-active' : ''}"
               data-hero-dot="${i}" aria-label="Buka slide ${i + 1}"
-              style="width: ${i === 0 ? '28px' : '8px'}; background: ${i === 0 ? '#1ed760' : 'rgba(255,255,255,0.38)'};"></button>
+              style="width: ${i === 0 ? '28px' : '8px'}; background: ${i === 0 ? '#2BA641' : 'rgba(255,255,255,0.38)'};"></button>
     `).join('');
 
     heroDots.querySelectorAll('[data-hero-dot]').forEach((btn) => {
@@ -248,7 +298,7 @@
     heroDots.querySelectorAll('.hero-dot').forEach((d, i) => {
       const active = i === heroIndex;
       d.style.width      = active ? '28px' : '8px';
-      d.style.background = active ? '#1ed760' : 'rgba(255,255,255,0.38)';
+      d.style.background = active ? '#2BA641' : 'rgba(255,255,255,0.38)';
       d.classList.toggle('is-active', active);
     });
   }
@@ -413,8 +463,7 @@
   async function loadPlatformPage(platform, page) {
     const homeRes = await D.Platforms[platform].home(page);
     const data = D.unwrap(homeRes) || {};
-    let items = normalizeItems(data).map((item) => withPlatform(item, platform));
-    items = await enrichVisibleItems(items, platform);
+    const items = normalizeItems(data).map((item) => withPlatform(item, platform));
     return { items, data };
   }
 
@@ -435,18 +484,21 @@
 
   async function loadHomeData(platform, page) {
     if (platform === 'serial') {
-      const homeRes = await D.Platforms[SERIAL_PLATFORM].home(page);
-      const data = D.unwrap(homeRes) || {};
-      let items = (data.items || []).map((item) => withPlatform(item, SERIAL_PLATFORM));
-      items = await enrichVisibleItems(items, SERIAL_PLATFORM);
+      const settled = await Promise.allSettled(SERIAL_PLATFORMS.map((p) => loadPlatformPage(p, page)));
+      const fulfilled = settled.filter((result) => result.status === 'fulfilled');
+      if (!fulfilled.length) throw settled[0]?.reason || new Error('Konten gagal dimuat.');
+      const allItems = interleaveGroups(fulfilled.map((result) => result.value.items));
+      const items = await enrichVisibleItems(allItems, platform);
       const sectionItems = buildSectionItems(items);
-      return { items, sectionItems, data };
+      return {
+        items,
+        sectionItems,
+        data: { hasMore: fulfilled.some((r) => r.value.data?.hasMore !== false && r.value.items.length >= 6) },
+      };
     }
 
-    if (platform === 'shorts') {
-      const settled = await Promise.allSettled(
-        D.PLATFORMS.map((p) => loadPlatformPage(p.id, page))
-      );
+    if (platform === 'movie') {
+      const settled = await Promise.allSettled(MOVIE_PLATFORMS.map((p) => loadPlatformPage(p, page)));
       const fulfilled = settled.filter((result) => result.status === 'fulfilled');
       if (!fulfilled.length) throw settled[0]?.reason || new Error('Konten gagal dimuat.');
 
@@ -459,25 +511,27 @@
       };
     }
 
-    // 'all' — mix shorts + serial
-    const [shortsSettled, serialSettled] = await Promise.allSettled([
-      Promise.allSettled(D.PLATFORMS.map((p) => loadPlatformPage(p.id, page))),
-      D.Platforms[SERIAL_PLATFORM].home(page).then((res) => {
-        const data = D.unwrap(res) || {};
-        return { items: (data.items || []).map((item) => withPlatform(item, SERIAL_PLATFORM)), data };
-      }),
+    // 'all' - mix serial + movie
+    const [serialSettled, movieSettled] = await Promise.allSettled([
+      Promise.allSettled(SERIAL_PLATFORMS.map((p) => loadPlatformPage(p, page))),
+      Promise.allSettled(MOVIE_PLATFORMS.map((p) => loadPlatformPage(p, page))),
     ]);
 
-    const shortsGroups = shortsSettled.status === 'fulfilled'
-      ? shortsSettled.value.filter((r) => r.status === 'fulfilled').map((r) => r.value.items)
+    const serialItems = serialSettled.status === 'fulfilled'
+      ? interleaveGroups(serialSettled.value.filter((r) => r.status === 'fulfilled').map((r) => r.value.items))
       : [];
-    const serialItems = serialSettled.status === 'fulfilled' ? serialSettled.value.items : [];
+    const movieItems = movieSettled.status === 'fulfilled'
+      ? interleaveGroups(movieSettled.value.filter((r) => r.status === 'fulfilled').map((r) => r.value.items))
+      : [];
 
-    if (!shortsGroups.length && !serialItems.length) {
+    if (!serialItems.length && !movieItems.length) {
       throw new Error('Konten gagal dimuat.');
     }
 
-    const allGroups = [...shortsGroups, ...(serialItems.length ? [serialItems] : [])];
+    const allGroups = [
+      ...(serialItems.length ? [serialItems] : []),
+      ...(movieItems.length ? [movieItems] : []),
+    ];
     const allItems = interleaveGroups(allGroups);
     const sectionItems = buildSectionItems(allItems);
     const items = [...sectionItems.trending, ...sectionItems.newRelease, ...sectionItems.forYou];
@@ -499,6 +553,7 @@
   }
 
   async function loadHome(platform, append = false) {
+    const token = ++homeLoadToken;
     D.motion?.showProgress?.();
     state.platform = platform;
 
@@ -529,6 +584,12 @@
         ? null
         : sectionItems;
       renderHomeSections(state.items, platform);
+      if (!append) {
+        enrichHomeHero(state.items).then((heroItems) => {
+          if (token !== homeLoadToken) return;
+          buildHero(heroItems);
+        });
+      }
       updateLoadMore(items, data);
       D.motion?.hideProgress?.();
     } catch (e) {
@@ -593,6 +654,7 @@
     syncPlatformButton(state.platform);
     loadHome(state.platform);
   });
+  if (storedHomeCat === 'shorts') D.Store.set(D.STORAGE.HOME_CAT, 'all');
   syncPlatformButton(state.platform);
   loadHome(state.platform);
 })();

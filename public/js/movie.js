@@ -1,18 +1,18 @@
-/* Serial page · catalog with hero slider + full-catalog smart search. */
+/* Movie page · catalog with hero slider + full-catalog smart search. */
 (function () {
   const D = window.DramSi;
 
-  const heroTrack = document.getElementById('serialHeroTrack');
-  const heroDots = document.getElementById('serialHeroDots');
-  const searchForm = document.getElementById('serialSearchForm');
-  const searchInput = document.getElementById('serialSearchInput');
-  const searchClear = document.getElementById('serialSearchClear');
-  const yearFilter = document.getElementById('serialYearFilter');
-  const yearLabel = document.getElementById('serialYearLabel');
-  const filterReset = document.getElementById('serialFilterReset');
-  const trendingRail = document.getElementById('serialTrendingRail');
-  const newRail = document.getElementById('serialNewRail');
-  const forYouGrid = document.getElementById('serialForYouGrid');
+  const heroTrack = document.getElementById('movieHeroTrack');
+  const heroDots = document.getElementById('movieHeroDots');
+  const searchForm = document.getElementById('movieSearchForm');
+  const searchInput = document.getElementById('movieSearchInput');
+  const searchClear = document.getElementById('movieSearchClear');
+  const yearFilter = document.getElementById('movieYearFilter');
+  const yearLabel = document.getElementById('movieYearLabel');
+  const filterReset = document.getElementById('movieFilterReset');
+  const trendingRail = document.getElementById('movieTrendingRail');
+  const newRail = document.getElementById('movieNewRail');
+  const forYouGrid = document.getElementById('movieForYouGrid');
   const loadMoreBtn = document.getElementById('loadMoreBtn');
 
   const state = {
@@ -26,7 +26,7 @@
     heroItems: [],
   };
 
-  let platform = 'kdrama';
+  let platform = 'kmovie';
   let searchDebounceId = null;
   let heroTimer = null;
   let heroIndex = 0;
@@ -45,12 +45,12 @@
   }
 
   // ── Tab switching ──────────────────────────────────────────────────────────
-  const tabBtns = document.querySelectorAll('[data-serial-tab]');
+  const tabBtns = document.querySelectorAll('[data-movie-tab]');
 
   function setActiveTab(newPlatform) {
     platform = newPlatform;
     tabBtns.forEach((btn) => {
-      const isActive = btn.dataset.serialTab === platform;
+      const isActive = btn.dataset.movieTab === platform;
       btn.setAttribute('aria-selected', String(isActive));
       if (isActive) {
         btn.style.background = 'var(--accent)';
@@ -71,9 +71,9 @@
 
   tabBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
-      if (btn.dataset.serialTab === platform) return;
+      if (btn.dataset.movieTab === platform) return;
       clearTimeout(searchDebounceId);
-      setActiveTab(btn.dataset.serialTab);
+      setActiveTab(btn.dataset.movieTab);
       heroDetailCache.clear();
       loadFilters();
       load(true);
@@ -93,7 +93,7 @@
   }
 
   function hasHeroMeta(item) {
-    return Boolean(getItemYear(item) || D.episodeCount?.(item) || item?.episodes || item?.totalEpisodes || item?.network || item?.country);
+    return Boolean(getItemYear(item) || item?.country);
   }
 
   function isHeroReady(item) {
@@ -120,7 +120,7 @@
     return pool.slice(0, limit);
   }
 
-  function applySerialTranslations() {
+  function applymovieTranslations() {
     D.applyTranslations?.(document);
     document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
       el.placeholder = D.t(el.dataset.i18nPlaceholder);
@@ -247,12 +247,12 @@
     if (state.year && !years.includes(state.year)) state.year = '';
     state.availableYears = years;
 
-    if (yearLabel) yearLabel.textContent = state.year || D.t('serial.filter_year_all');
+    if (yearLabel) yearLabel.textContent = state.year || D.t('movie.filter_year_all');
     if (yearFilter) {
       yearFilter.style.color = state.year ? 'var(--accent)' : 'var(--text-secondary)';
       yearFilter.style.borderColor = state.year ? 'var(--accent)' : 'var(--border-muted)';
-      yearFilter.setAttribute('aria-label', state.year ? `Filter tahun ${state.year}` : D.t('serial.filter_year_all'));
-      yearFilter.dataset.tooltip = state.year || D.t('serial.filter_year_all');
+      yearFilter.setAttribute('aria-label', state.year ? `Filter tahun ${state.year}` : D.t('movie.filter_year_all'));
+      yearFilter.dataset.tooltip = state.year || D.t('movie.filter_year_all');
     }
     if (filterReset) filterReset.hidden = !state.year;
   }
@@ -260,10 +260,10 @@
   function openYearSheet() {
     if (!D.openSheet) return;
     D.openSheet({
-      title: D.t('serial.filter_year_all'),
+      title: D.t('movie.filter_year_all'),
       current: state.year,
       items: [
-        { value: '', label: D.t('serial.filter_year_all') },
+        { value: '', label: D.t('movie.filter_year_all') },
         ...state.availableYears.map((year) => ({ value: year, label: year })),
       ],
       onPick: (year) => {
@@ -287,7 +287,7 @@
 
   function renderRail(container, items, opts = {}) {
     if (!items.length) {
-      container.innerHTML = `<div class="text-sm text-white/45 px-2">${D.t('serial.empty_data')}</div>`;
+      container.innerHTML = `<div class="text-sm text-white/45 px-2">${D.t('movie.empty_data')}</div>`;
       return;
     }
     container.innerHTML = items.map((it, i) => D.buildPoster(it, platform, {
@@ -298,7 +298,7 @@
 
   function renderGrid(container, items) {
     if (!items.length) {
-      container.innerHTML = emptyMessage(D.t('serial.empty'));
+      container.innerHTML = emptyMessage(D.t('movie.empty'));
       return;
     }
     container.innerHTML = items.map((it) => D.buildPoster(it, platform)).join('');
@@ -344,9 +344,9 @@
     });
     const ranked = [...matched].sort((a, b) => searchScore(b, queryTokens) - searchScore(a, queryTokens));
 
-    const trendingHeader = document.querySelector('#serialTrendingSection .section-title');
+    const trendingHeader = document.querySelector('#movieTrendingSection .section-title');
     if (trendingHeader) {
-      trendingHeader.textContent = D.t('serial.trending');
+      trendingHeader.textContent = D.t('movie.trending');
     }
 
     renderRail(trendingRail, ranked.slice(0, 12), { ranked: true });
@@ -361,9 +361,9 @@
     }
 
     // Reset header ke normal
-    const trendingHeader = document.querySelector('#serialTrendingSection .section-title');
+    const trendingHeader = document.querySelector('#movieTrendingSection .section-title');
     if (trendingHeader && trendingHeader.dataset.i18n) {
-      trendingHeader.textContent = D.t('serial.trending');
+      trendingHeader.textContent = D.t('movie.trending');
     }
 
     const visibleItems = filterItems(items);
@@ -475,13 +475,9 @@
       heroTrack.innerHTML = heroSlides.map((it, i) => {
         const cover = D.heroImage ? D.heroImage(it) : (it.banner || it.detailCover || it.cover || it.image || D.placeholderImg(it.title));
         const synopsis = synopsisOf(it);
-        const eps = D.episodeCount ? D.episodeCount(it) : Number(it.episodes || it.totalEpisodes || 0);
-        const epsLabel = eps > 1 ? `${eps} ${D.t('common.episodes')}` : '';
         const dot = `<span style="width:3px;height:3px;border-radius:50%;background:#777;display:inline-block;flex-shrink:0;"></span>`;
         const metaHtml = [
           it.year ? `<span>${escapeHtml(it.year)}</span>` : '',
-          epsLabel ? `<span>${epsLabel}</span>` : '',
-          it.network ? `<span>${escapeHtml(it.network)}</span>` : '',
           it.country ? `<span>${escapeHtml(it.country)}</span>` : '',
         ].filter(Boolean).join(dot);
         const activeClass = i === 0 ? 'is-active' : '';
@@ -503,7 +499,7 @@
                 ${D.cleanTitle?.(it.title) || it.title || ''}
               </h2>
               <p class="home-hero-meta mt-1.5 flex flex-wrap items-center gap-x-2" style="color: #d7d7d7;">
-                ${metaHtml || `<span>${D.Platforms[platform]?.label || 'Serial'}</span>`}
+                ${metaHtml || `<span>${D.Platforms[platform]?.label || 'Movie'}</span>`}
               </p>
               ${synopsis ? `<p class="home-hero-synopsis mt-3 line-clamp-2">${synopsis}</p>` : ''}
               <span data-watch-href="${D.watchUrl(platform, it.id)}" class="hero-cta-watch mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-bold sm:mt-4 sm:px-5 sm:py-2.5 sm:text-sm"
@@ -607,13 +603,13 @@
     } catch (e) {
       D.motion?.hideProgress?.();
       loadMoreBtn.disabled = false;
-      const message = e.message || D.friendlyError?.() || D.t('serial.load_error');
+      const message = e.message || D.friendlyError?.() || D.t('movie.load_error');
       D.toast?.error?.(message);
       heroTrack.innerHTML = '';
       heroDots.innerHTML = '';
-      trendingRail.innerHTML = D.buildErrorState(message, { inline: true, retryId: 'serial' });
-      newRail.innerHTML = D.buildErrorState(message, { inline: true, retryId: 'serial' });
-      forYouGrid.innerHTML = D.buildErrorState(message, { retryId: 'serial' });
+      trendingRail.innerHTML = D.buildErrorState(message, { inline: true, retryId: 'movie' });
+      newRail.innerHTML = D.buildErrorState(message, { inline: true, retryId: 'movie' });
+      forYouGrid.innerHTML = D.buildErrorState(message, { retryId: 'movie' });
       [trendingRail, newRail, forYouGrid].forEach((el) => {
         el.querySelectorAll('[data-retry-section]').forEach((btn) => {
           btn.addEventListener('click', () => load(true));
@@ -633,8 +629,8 @@
 
     if (!kw) {
       // Reset header section
-      const trendingHeader = document.querySelector('#serialTrendingSection .section-title');
-      if (trendingHeader) trendingHeader.textContent = D.t('serial.trending');
+      const trendingHeader = document.querySelector('#movieTrendingSection .section-title');
+      if (trendingHeader) trendingHeader.textContent = D.t('movie.trending');
       renderSections(state.items);
       return;
     }
@@ -726,14 +722,15 @@
   }, { passive: true });
 
   document.addEventListener('lang:changed', () => {
-    applySerialTranslations();
+    applymovieTranslations();
     syncFilterOptions();
     renderHero(state.heroItems.length ? state.heroItems : state.items);
     renderSections(state.items);
   });
 
-  applySerialTranslations();
+  applymovieTranslations();
   loadFilters();
   load(true);
   window.refreshIcons?.();
 })();
+

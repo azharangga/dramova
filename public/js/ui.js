@@ -31,7 +31,7 @@
       const active = route === path || (route !== '/' && path.startsWith(route));
       el.classList.toggle('is-active', active);
       el.style.color      = active ? 'var(--accent)' : 'var(--text-secondary)';
-      el.style.background = active ? 'rgba(30,215,96,0.12)' : '';
+      el.style.background = active ? 'rgba(43,166,65,0.13)' : '';
     });
   }
 
@@ -53,7 +53,7 @@
         <button data-value="${it.value}"
                 class="sheet-item flex items-center gap-3 px-4 py-3 text-left text-sm font-bold transition active:scale-[.98]"
                 style="border-radius: 10px;
-                       background: ${active ? 'rgba(30,215,96,0.12)' : 'var(--bg-raised)'};
+                       background: ${active ? 'rgba(43,166,65,0.13)' : 'var(--bg-raised)'};
                        border: 1px solid ${active ? 'var(--accent)' : 'transparent'};
                        color: var(--text-primary);">
           <span class="flex-1">${it.label}</span>
@@ -195,8 +195,27 @@
     ) || 0;
   }
 
+  function upgradeImageUrl(raw, mode = 'poster') {
+    if (!raw) return '';
+    let url = String(raw)
+      .replace(/[-_]\d{2,4}x\d{2,4}(\.\w{3,4})(\?.*)?$/, '$1$2')
+      .replace(/\?(?:w|width|h|height|size|resize|fit)=[^&]*(?:&(?:w|width|h|height|size|resize|fit)=[^&]*)*/i, '');
+    url = url.replace(/\/\d{2,4}x\d{2,4}\//, mode === 'hero' ? '/1280x720/' : '/600x900/');
+    if (url.includes('imageView2') || url.includes('x-oss-process')) {
+      url = url.replace(/\/(?:resize|thumbnail),\w_\d+(?:,\w_\d+)*/i, '');
+    }
+    return url;
+  }
+
+  function bestImage(item, mode = 'poster') {
+    const raw = mode === 'hero'
+      ? (item.banner || item.detailCover || item.cover || item.image || '')
+      : (item.cover || item.image || item.detailCover || item.banner || '');
+    return upgradeImageUrl(raw, mode) || placeholderImg(item.title);
+  }
+
   function buildPoster(item, platform, opts = {}) {
-    const img = item.cover || item.image || placeholderImg(item.title);
+    const img = bestImage(item, 'poster');
     const eps = episodeCount(item);
     const showEpisodeBadge = eps > 0 && !(platform === 'kdrama' && eps <= 1);
     const platformLabel = (D.Platforms?.[platform]?.label) || platform;
@@ -417,7 +436,7 @@
    * Also upgrades URLs by removing thumbnail size suffixes.
    */
   function heroImage(item) {
-    const raw = item.banner || item.detailCover || item.cover || item.image || '';
+    const raw = bestImage(item, 'hero');
     if (!raw) return placeholderImg(item.title);
     // Upgrade: remove common thumbnail size suffixes to get full-res
     // e.g. "image-300x400.jpg" → "image.jpg"

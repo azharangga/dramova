@@ -24,11 +24,11 @@
   // Mapping bahasa global ke parameter masing-masing platform.
   // Beberapa platform pakai kode "in" untuk Indonesia, sebagian "id".
   const LANG_MAP = {
-    id: { goodshort: 'id', dramabite: 'id', dramanova: 'in', dramabox: 'in', kdrama: 'id' },
-    en: { goodshort: 'en', dramabite: 'en', dramanova: 'en', dramabox: 'en', kdrama: 'id' },
-    ko: { goodshort: 'kr', dramabite: 'ko', dramanova: 'ko', dramabox: 'ko', kdrama: 'id' },
-    pt: { goodshort: 'pt', dramabite: 'pt', dramanova: 'pt', dramabox: 'pt', kdrama: 'id' },
-    th: { goodshort: 'th', dramabite: 'th', dramanova: 'th', dramabox: 'th', kdrama: 'id' },
+    id: { goodshort: 'id', dramabite: 'id', dramanova: 'in', dramabox: 'in', kdrama: 'id', cdrama: 'id', varietyshow: 'id', jdrama: 'id', thaidrama: 'id', kmovie: 'id', cmovie: 'id', jmovie: 'id', thaimovie: 'id' },
+    en: { goodshort: 'en', dramabite: 'en', dramanova: 'en', dramabox: 'en', kdrama: 'id', cdrama: 'id', varietyshow: 'id', jdrama: 'id', thaidrama: 'id', kmovie: 'id', cmovie: 'id', jmovie: 'id', thaimovie: 'id' },
+    ko: { goodshort: 'kr', dramabite: 'ko', dramanova: 'ko', dramabox: 'ko', kdrama: 'id', cdrama: 'id', varietyshow: 'id', jdrama: 'id', thaidrama: 'id', kmovie: 'id', cmovie: 'id', jmovie: 'id', thaimovie: 'id' },
+    pt: { goodshort: 'pt', dramabite: 'pt', dramanova: 'pt', dramabox: 'pt', kdrama: 'id', cdrama: 'id', varietyshow: 'id', jdrama: 'id', thaidrama: 'id', kmovie: 'id', cmovie: 'id', jmovie: 'id', thaimovie: 'id' },
+    th: { goodshort: 'th', dramabite: 'th', dramanova: 'th', dramabox: 'th', kdrama: 'id', cdrama: 'id', varietyshow: 'id', jdrama: 'id', thaidrama: 'id', kmovie: 'id', cmovie: 'id', jmovie: 'id', thaimovie: 'id' },
   };
 
   const I18N = {
@@ -764,16 +764,44 @@
     'serial.sub': 'สำรวจซีรีส์ด้วยการค้นหา ฟิลเตอร์ปี และส่วนคัดสรร',
   });
 
+  Object.keys(I18N).forEach((code) => {
+    Object.assign(I18N[code], {
+      'nav.movie': code === 'id' ? 'Movie' : 'Movie',
+      'discover.cat_movie_sub': code === 'id' ? 'Film Asia pilihan' : 'Selected Asian movies',
+      'movie.search_placeholder': code === 'id' ? 'Cari judul movie...' : 'Search movie titles...',
+      'movie.filter_year_all': code === 'id' ? 'Semua Tahun' : 'All Years',
+      'movie.trending': code === 'id' ? 'Sedang Trending' : 'Trending Now',
+      'movie.trending_sub': code === 'id' ? 'Movie pilihan yang lagi ramai ditonton.' : 'Movies people are watching right now.',
+      'movie.new': code === 'id' ? 'Rilis Baru' : 'New Releases',
+      'movie.new_sub': code === 'id' ? 'Judul terbaru dari katalog movie.' : 'Fresh titles from the movie catalog.',
+      'movie.for_you': code === 'id' ? 'Untuk Kamu' : 'For You',
+      'movie.for_you_sub': code === 'id' ? 'Lebih banyak movie untuk ditonton.' : 'More movies to watch.',
+      'movie.empty': code === 'id' ? 'Belum ada daftar movie.' : 'No movie list yet.',
+      'movie.empty_data': code === 'id' ? 'Belum ada data.' : 'No data yet.',
+      'movie.load_error': code === 'id' ? 'Gagal memuat movie.' : 'Failed to load movies.',
+    });
+  });
+
   const PLATFORMS = [
-    { id: 'goodshort', label: 'GoodShort', orientation: 'vertical', type: 'shorts' },
-    { id: 'dramabite', label: 'DramaBite', orientation: 'vertical', type: 'shorts' },
-    { id: 'dramabox', label: 'DramaBox', orientation: 'vertical', type: 'shorts' },
+    { id: 'goodshort', label: 'GoodShort', orientation: 'vertical', type: 'shorts', disabled: true },
+    { id: 'dramabite', label: 'DramaBite', orientation: 'vertical', type: 'shorts', disabled: true },
+    { id: 'dramabox', label: 'DramaBox', orientation: 'vertical', type: 'shorts', disabled: true },
     { id: 'dramanova', label: 'DramaNova', orientation: 'horizontal', type: 'shorts', disabled: true },
   ];
 
   const SERIAL_PLATFORMS = [
     { id: 'kdrama', label: 'K-Drama', orientation: 'horizontal', type: 'series' },
     { id: 'cdrama', label: 'C-Drama', orientation: 'horizontal', type: 'series' },
+    { id: 'varietyshow', label: 'Variety Show', orientation: 'horizontal', type: 'series' },
+    { id: 'jdrama', label: 'J-Drama', orientation: 'horizontal', type: 'series' },
+    { id: 'thaidrama', label: 'Thai Drama', orientation: 'horizontal', type: 'series' },
+  ];
+
+  const MOVIE_PLATFORMS = [
+    { id: 'kmovie', label: 'K-Movie', orientation: 'horizontal', type: 'movie' },
+    { id: 'cmovie', label: 'C-Movie', orientation: 'horizontal', type: 'movie' },
+    { id: 'jmovie', label: 'J-Movie', orientation: 'horizontal', type: 'movie' },
+    { id: 'thaimovie', label: 'Thai Movie', orientation: 'horizontal', type: 'movie' },
   ];
 
   const Store = {
@@ -912,6 +940,7 @@
 
   function platformType(platformId) {
     if (SERIAL_PLATFORMS.some((p) => p.id === platformId)) return 'series';
+    if (MOVIE_PLATFORMS.some((p) => p.id === platformId)) return 'movie';
     return 'shorts';
   }
 
@@ -993,7 +1022,7 @@
 
   window.DramSi = window.DramSi || {};
   Object.assign(window.DramSi, {
-    LANGS, PLATFORMS: ACTIVE_PLATFORMS, ALL_PLATFORMS: PLATFORMS, SERIAL_PLATFORMS, STORAGE, Store,
+    LANGS, PLATFORMS: ACTIVE_PLATFORMS, ALL_PLATFORMS: PLATFORMS, SERIAL_PLATFORMS, MOVIE_PLATFORMS, STORAGE, Store,
     getLang, setLang, getPlatform, setPlatform, langFor,
     t, applyTranslations,
     pushHistory, getHistory,

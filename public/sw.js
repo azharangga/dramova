@@ -3,15 +3,15 @@
    Cache: static assets (cache-first), API (network-first), pages (stale-while-revalidate)
    ===================================================================== */
 
-const CACHE_NAME   = 'dramsi-v31';
-const STATIC_CACHE = 'dramsi-static-v25';
-const API_CACHE    = 'dramsi-api-v25';
+const CACHE_NAME   = 'dramsi-v32';
+const STATIC_CACHE = 'dramsi-static-v26';
+const API_CACHE    = 'dramsi-api-v26';
 
 const STATIC_ASSETS = [
   '/',
   '/discover',
-  '/shorts',
   '/series',
+  '/movie',
   '/search',
   '/history',
   '/css/app.css',
@@ -27,9 +27,8 @@ const STATIC_ASSETS = [
   '/js/search.js',
   '/js/discover.js',
   '/js/serial.js',
+  '/js/movie.js',
   '/js/library.js',
-  '/js/shorts.js',
-  '/js/shorts-feed.js',
   '/js/watch.js',
   '/img/favicon.png',
   '/img/icon.png',
@@ -78,11 +77,9 @@ self.addEventListener('fetch', (event) => {
 
   // Skip video/stream proxies — always network
   if (url.pathname.startsWith('/proxy/')) return;
-  if (url.pathname.startsWith('/goodshort/playlist')) return;
-  if (url.pathname.startsWith('/goodshort/aeskey')) return;
 
   // API calls — network-first, fallback to cache
-  if (url.pathname.startsWith('/api/kdrama/video') || url.pathname.startsWith('/api/kdrama/stream')) {
+  if (url.pathname.startsWith('/api/serial/kdrama/video') || url.pathname.startsWith('/api/serial/kdrama/stream')) {
     event.respondWith(networkOnly(request, 20000));
     return;
   }

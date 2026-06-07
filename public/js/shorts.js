@@ -189,7 +189,7 @@
     heroDots.innerHTML = heroSlides.map((_, i) => `
       <button type="button" class="hero-dot hero-dot-btn ${i === 0 ? 'is-active' : ''}"
               data-hero-dot="${i}" aria-label="Buka slide ${i + 1}"
-              style="width: ${i === 0 ? '28px' : '8px'}; background: ${i === 0 ? '#1ed760' : 'rgba(255,255,255,0.38)'};"></button>
+              style="width: ${i === 0 ? '28px' : '8px'}; background: ${i === 0 ? '#2BA641' : 'rgba(255,255,255,0.38)'};"></button>
     `).join('');
 
     heroDots.querySelectorAll('[data-hero-dot]').forEach((btn) => {
@@ -220,7 +220,7 @@
     heroDots.querySelectorAll('.hero-dot').forEach((d, i) => {
       const active = i === heroIndex;
       d.style.width      = active ? '28px' : '8px';
-      d.style.background = active ? '#1ed760' : 'rgba(255,255,255,0.38)';
+      d.style.background = active ? '#2BA641' : 'rgba(255,255,255,0.38)';
       d.classList.toggle('is-active', active);
     });
   }

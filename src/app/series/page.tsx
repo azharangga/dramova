@@ -21,6 +21,21 @@ export default function SeriesPage() {
           style={{ background: "var(--bg-raised)", color: "var(--text-secondary)", border: "1px solid var(--border-muted)", letterSpacing: "0.5px" }}>
           C-Drama
         </button>
+        <button id="serialTabVarietyshow" role="tab" aria-selected="false" data-serial-tab="varietyshow"
+          className="serial-tab-btn inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition active:scale-95"
+          style={{ background: "var(--bg-raised)", color: "var(--text-secondary)", border: "1px solid var(--border-muted)", letterSpacing: "0.5px" }}>
+          Variety Show
+        </button>
+        <button id="serialTabJdrama" role="tab" aria-selected="false" data-serial-tab="jdrama"
+          className="serial-tab-btn inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition active:scale-95"
+          style={{ background: "var(--bg-raised)", color: "var(--text-secondary)", border: "1px solid var(--border-muted)", letterSpacing: "0.5px" }}>
+          J-Drama
+        </button>
+        <button id="serialTabThaidrama" role="tab" aria-selected="false" data-serial-tab="thaidrama"
+          className="serial-tab-btn inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition active:scale-95"
+          style={{ background: "var(--bg-raised)", color: "var(--text-secondary)", border: "1px solid var(--border-muted)", letterSpacing: "0.5px" }}>
+          Thai Drama
+        </button>
       </div>
 
       <div className="serial-search-controls mt-4 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">

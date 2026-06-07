@@ -8,12 +8,13 @@
   const searchClear = document.getElementById('discoverSearchClear');
   const filterBtn = document.getElementById('discoverFilterBtn');
 
-  const SHORTS_PLATFORMS = ['goodshort', 'dramabite', 'dramabox'];
-  const SERIAL_PLATFORM = 'kdrama';
+  const SERIAL_PLATFORMS = (D.SERIAL_PLATFORMS || []).map((p) => p.id);
+  const MOVIE_PLATFORMS = (D.MOVIE_PLATFORMS || []).map((p) => p.id);
   const PAGE_SIZE = 18;
 
+  const storedFilter = D.Store.get(D.STORAGE.DISCOVER_CAT, 'all') || 'all';
   const state = {
-    filter: D.Store.get(D.STORAGE.DISCOVER_CAT, 'all') || 'all',
+    filter: storedFilter === 'shorts' ? 'all' : storedFilter,
     keyword: '',
     page: 1,
     items: [],
@@ -24,8 +25,8 @@
   function categoryItems() {
     return [
       { value: 'all', label: D.t('discover.cat_all') },
-      { value: 'shorts', label: 'Shorts', sub: D.t('discover.cat_shorts_sub') },
       { value: 'serial', label: 'Serial', sub: D.t('discover.cat_serial_sub') },
+      { value: 'movie', label: 'Movie', sub: D.t('discover.cat_movie_sub') },
     ];
   }
 
@@ -66,19 +67,17 @@
       return;
     }
     grid.innerHTML = state.items.map((it) =>
-      D.buildPoster(it, it.__platform || SHORTS_PLATFORMS[0])
+      D.buildPoster(it, it.__platform || SERIAL_PLATFORMS[0] || MOVIE_PLATFORMS[0])
     ).join('');
     window.refreshIcons?.();
   }
 
-  async function loadShorts(page) {
+  async function loadSerial(page) {
     const settled = await Promise.allSettled(
-      SHORTS_PLATFORMS.map((p) =>
+      SERIAL_PLATFORMS.map((p) =>
         D.Platforms[p].home(page).then((res) => {
           const data = D.unwrap(res) || {};
-          const items = data.items
-            || (data.sections ? data.sections.flatMap((s) => s.items || s.books || []) : []);
-          return items.map((it) => withPlatform(it, p));
+          return (data.items || []).map((it) => withPlatform(it, p));
         })
       )
     );
@@ -87,31 +86,38 @@
     return { items: shuffle(allItems).slice(0, PAGE_SIZE), hasMore: allItems.length >= 12 };
   }
 
-  async function loadSerial(page) {
-    const res = await D.Platforms[SERIAL_PLATFORM].home(page);
-    const data = D.unwrap(res) || {};
-    const items = (data.items || []).map((it) => withPlatform(it, SERIAL_PLATFORM));
-    return { items: items.slice(0, PAGE_SIZE), hasMore: data.hasMore !== false && items.length >= 6 };
+  async function loadMovie(page) {
+    const settled = await Promise.allSettled(
+      MOVIE_PLATFORMS.map((p) =>
+        D.Platforms[p].home(page).then((res) => {
+          const data = D.unwrap(res) || {};
+          return (data.items || []).map((it) => withPlatform(it, p));
+        })
+      )
+    );
+    const fulfilled = settled.filter((r) => r.status === 'fulfilled');
+    const allItems = fulfilled.flatMap((r) => r.value);
+    return { items: shuffle(allItems).slice(0, PAGE_SIZE), hasMore: allItems.length >= 12 };
   }
 
   async function loadAll(page) {
-    const [shortsResult, serialResult] = await Promise.allSettled([
-      loadShorts(page),
+    const [serialResult, movieResult] = await Promise.allSettled([
       loadSerial(page),
+      loadMovie(page),
     ]);
-    const shortsItems = shortsResult.status === 'fulfilled' ? shortsResult.value.items : [];
     const serialItems = serialResult.status === 'fulfilled' ? serialResult.value.items : [];
-    const combined = shuffle([...shortsItems, ...serialItems]).slice(0, PAGE_SIZE);
-    const hasMore = (shortsItems.length >= 6) || (serialItems.length >= 6);
+    const movieItems = movieResult.status === 'fulfilled' ? movieResult.value.items : [];
+    const combined = shuffle([...serialItems, ...movieItems]).slice(0, PAGE_SIZE);
+    const hasMore = (serialItems.length >= 6) || (movieItems.length >= 6);
     return { items: combined, hasMore };
   }
 
   async function searchPlatforms(keyword) {
     const platforms = state.filter === 'serial'
-      ? [SERIAL_PLATFORM]
-      : state.filter === 'shorts'
-        ? SHORTS_PLATFORMS
-        : [...SHORTS_PLATFORMS, SERIAL_PLATFORM];
+      ? SERIAL_PLATFORMS
+      : state.filter === 'movie'
+        ? MOVIE_PLATFORMS
+        : [...SERIAL_PLATFORMS, ...MOVIE_PLATFORMS];
 
     const settled = await Promise.allSettled(
       platforms.map((p) =>
@@ -150,8 +156,8 @@
         result = { items, hasMore: false };
       } else if (state.filter === 'all') {
         result = await loadAll(state.page);
-      } else if (state.filter === 'shorts') {
-        result = await loadShorts(state.page);
+      } else if (state.filter === 'movie') {
+        result = await loadMovie(state.page);
       } else {
         result = await loadSerial(state.page);
       }
@@ -237,6 +243,7 @@
   });
 
   // ── Init ───────────────────────────────────────────────────────
+  if (storedFilter === 'shorts') D.Store.set(D.STORAGE.DISCOVER_CAT, 'all');
   syncFilterBtn();
   load(true);
 })();

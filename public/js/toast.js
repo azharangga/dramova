@@ -19,7 +19,7 @@
 
   // ── Icon circles (filled background, white icon) ───────────────
   const ICON_BG = {
-    success: '#1ed760',
+    success: '#2BA641',
     error:   '#f3727f',
     warning: '#ffa42b',
     info:    '#539df5',

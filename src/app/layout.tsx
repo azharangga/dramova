@@ -56,7 +56,7 @@ export default function RootLayout({
                 colors: {
                   base:'#0f0f0f',surface:'#161616',raised:'#1c1c1c',
                   card:'#222222',border:'#282828',muted:'#3a3a3a',
-                  green:'#1ed760','green-dark':'#1db954',silver:'#a0a0a0',
+                  green:'#2BA641','green-dark':'#238A36',silver:'#a0a0a0',
                   'near-white':'#f1f1f1',negative:'#ff6b6b',warning:'#ffb347',info:'#5ba4f5',
                 },
                 fontFamily:{sans:['Inter','system-ui','sans-serif']},

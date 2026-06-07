@@ -128,24 +128,26 @@
   }
 
   function platformItems() {
+    const serialSub = (D.SERIAL_PLATFORMS || []).map((p) => p.label).join(', ');
+    const movieSub = (D.MOVIE_PLATFORMS || []).map((p) => p.label).join(', ');
     return [
       { value: 'all', label: D.t('search.all_platforms'), sub: D.t('search.all_platforms_sub') },
-      { value: 'shorts', label: 'Shorts', sub: 'GoodShort, DramaBite, DramaBox' },
-      { value: 'serial', label: 'Serial', sub: 'K-Drama, C-Drama' },
+      { value: 'serial', label: 'Serial', sub: serialSub },
+      { value: 'movie', label: 'Movie', sub: movieSub },
     ];
   }
 
   function getActivePlatforms() {
-    if (state.platform === 'shorts') {
-      return D.PLATFORMS.filter((p) => !p.disabled);
-    }
     if (state.platform === 'serial') {
       return D.SERIAL_PLATFORMS || [];
     }
+    if (state.platform === 'movie') {
+      return D.MOVIE_PLATFORMS || [];
+    }
     // all
     return [
-      ...D.PLATFORMS.filter((p) => !p.disabled),
       ...(D.SERIAL_PLATFORMS || []),
+      ...(D.MOVIE_PLATFORMS || []),
     ];
   }
 

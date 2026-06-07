@@ -106,7 +106,7 @@
       : '';
 
     return '<div class="shorts-feed__item" data-index="' + idx + '" data-id="' + item.id + '" data-platform="' + p + '" data-ep="' + item.episode + '">' +
-      '<img class="shorts-feed__poster" src="' + (item.cover || '') + '" alt="" loading="' + (idx < 2 ? 'eager' : 'lazy') + '"/>' +
+      '<img class="shorts-feed__poster" src="' + (D.heroImage ? D.heroImage(item) : (item.cover || '')) + '" alt="" loading="' + (idx < 2 ? 'eager' : 'lazy') + '"/>' +
       '<video id="sfv' + idx + '" playsinline webkit-playsinline loop muted preload="auto"></video>' +
       '<div class="shorts-feed__spinner"><div class="h-8 w-8 rounded-full border-[3px] border-white/15 border-t-white animate-spin-slow"></div></div>' +
       '<div class="shorts-feed__overlay"><div class="shorts-feed__info">' +
