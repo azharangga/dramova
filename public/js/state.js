@@ -779,6 +779,9 @@
       'movie.empty': code === 'id' ? 'Belum ada daftar movie.' : 'No movie list yet.',
       'movie.empty_data': code === 'id' ? 'Belum ada data.' : 'No data yet.',
       'movie.load_error': code === 'id' ? 'Gagal memuat movie.' : 'Failed to load movies.',
+      'profile.kicker': code === 'id' ? 'Pengaturan' : 'Settings',
+      'profile.title': code === 'id' ? 'Kelola Akun' : 'Account Settings',
+      'profile.sub': code === 'id' ? 'Perbarui informasi profil, password, dan foto akun Dramova.' : 'Update your Dramova profile, password, and account photo.',
     });
   });
 

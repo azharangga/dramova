@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "@/styles/globals.css";
+import { Providers } from "@/app/providers";
 
 export const metadata: Metadata = {
   title: "Dramova · Movie dan Serial",
@@ -137,12 +138,12 @@ export default function RootLayout({
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         </div>
 
-        {children}
+        <Providers>{children}</Providers>
 
         {/* Load core scripts sequentially after hydration, then init UI */}
         <Script id="core-loader" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `
           (function(){
-            var scripts=['https://unpkg.com/lucide@latest/dist/umd/lucide.min.js','/js/api.js','/js/state.js','/js/toast.js','/js/ui.js','/js/video-optimize.js','/js/motion.js','/js/pull-refresh.js','/js/pwa.js'];
+            var scripts=['https://unpkg.com/lucide@latest/dist/umd/lucide.min.js','/js/api.js?v=auth-session-1','/js/state.js','/js/toast.js','/js/ui.js','/js/video-optimize.js','/js/motion.js','/js/pull-refresh.js','/js/pwa.js'];
             var i=0;
             function loadNext(){
               if(i>=scripts.length){onAllLoaded();return;}
@@ -170,7 +171,7 @@ export default function RootLayout({
               // Back to top
               var btt=document.getElementById('backToTop');if(btt){var v=false,ht=null;window.addEventListener('scroll',function(){var s=window.scrollY>400;if(s&&!v){v=true;btt.classList.remove('hiding');btt.classList.add('visible');}else if(!s&&v){v=false;btt.classList.add('hiding');clearTimeout(ht);ht=setTimeout(function(){btt.classList.remove('visible','hiding');},260);}},{passive:true});btt.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});}
               // Theme toggle
-              var tb=document.getElementById('themeToggleBtn');if(tb){function si(){var d=document.documentElement.getAttribute('data-theme')!=='light';tb.setAttribute('aria-label',window.DramSi?.t?.(d?'theme.light':'theme.dark')||(d?'Aktifkan mode terang':'Aktifkan mode gelap'));}tb.addEventListener('click',function(){window.DramSi?.toggleTheme?.();si();});document.addEventListener('theme:changed',si);si();}
+              var tb=document.getElementById('themeToggleBtn');if(tb){function si(){var d=document.documentElement.getAttribute('data-theme')!=='light';tb.setAttribute('aria-label',window.DramSi?.t?.(d?'theme.light':'theme.dark')||(d?'Aktifkan mode terang':'Aktifkan mode gelap'));}document.addEventListener('theme:changed',si);si();}
               // Lang changed
               document.addEventListener('lang:changed',function(){window.lucide?.createIcons?.();});
               window.addEventListener('resize',function(){window.lucide?.createIcons?.();});

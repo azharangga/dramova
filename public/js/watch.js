@@ -203,6 +203,31 @@
       duration: Math.floor(duration || 0),
       ts: Date.now(),
     }));
+    trackWatchProgress({ completed: false });
+  }
+
+  function trackWatchProgress({ completed = false } = {}) {
+    if (!dom.video) return;
+    const duration = Number.isFinite(dom.video.duration) ? dom.video.duration : 0;
+    const title = D.cleanTitle?.(state.drama?.title || state.drama?.bookName) || state.drama?.title || state.drama?.bookName || "";
+    try {
+      fetch("/api/activity/watch", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({
+          contentType,
+          platform,
+          contentId: dramaId,
+          episode: state.currentEp,
+          title,
+          cover: state.drama?.cover || state.drama?.coverWap || "",
+          currentTime: Math.floor(dom.video.currentTime || 0),
+          duration: Math.floor(duration || 0),
+          completed,
+        }),
+      }).catch(() => {});
+    } catch (_) {}
   }
 
   function formatTime(seconds) {
@@ -674,13 +699,15 @@
     const fav = D.isFavorite({ id: state.drama.id || dramaId, platform });
     // Desktop button
     const icon = dom.favBtn.querySelector('[data-lucide]');
-    dom.favBtn.style.background    = fav ? 'var(--accent-control-bg)' : 'var(--control-bg)';
-    dom.favBtn.style.borderColor   = fav ? 'var(--accent-control-border)' : 'var(--border-muted)';
-    dom.favBtn.style.color         = fav ? 'var(--accent-control-text)' : 'var(--text-secondary)';
+    dom.favBtn.classList.toggle('is-active', fav);
+    dom.favBtn.style.background    = fav ? 'color-mix(in srgb, var(--accent) 16%, transparent)' : 'var(--control-bg)';
+    dom.favBtn.style.borderColor   = fav ? 'var(--accent)' : 'var(--border-muted)';
+    dom.favBtn.style.color         = fav ? 'var(--accent)' : 'var(--text-secondary)';
     if (icon) icon.style.fill = fav ? 'currentColor' : 'none';
     // Mobile floating button
     if (dom.favBtnMobile) {
       const iconM = dom.favBtnMobile.querySelector('[data-lucide]');
+      dom.favBtnMobile.classList.toggle('is-active', fav);
       dom.favBtnMobile.style.color = fav ? 'var(--accent)' : '#ffffff';
       if (iconM) iconM.style.fill = fav ? 'currentColor' : 'none';
     }
@@ -1024,6 +1051,7 @@
         state._signedProxyUrl = state.currentQuality._signedProxy || '';
         setSrc(state.currentQuality.url, state.currentQuality.type, { seamless });
         state.isInitialStream = false;
+        trackWatchProgress({ completed: false });
         prefetchAround(ep);
       } else {
         showWatchError(D.t('player.episode_unavailable'));
@@ -1217,6 +1245,7 @@
     if (!dom.video.paused && !dom.video.ended) showPlaybackLoadingSoon(D.t('player.loading'), 220);
   });
   dom.video.addEventListener('ended', autoNext);
+  dom.video.addEventListener('ended', () => trackWatchProgress({ completed: true }));
   window.addEventListener('beforeunload', writeProgress);
 
   dom.prevBtn.addEventListener('click', () => {

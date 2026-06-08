@@ -18,7 +18,10 @@
   }
 
   async function requestJSON(path) {
-    const res = await fetch(`${root}${path}`, { credentials: 'omit' });
+    const res = await fetch(`${root}${path}`, {
+      credentials: 'same-origin',
+      headers: { accept: 'application/json' },
+    });
     if (!res.ok) throw new Error('Request failed');
     const data = await res.json();
     if (data && data.status === false) {
