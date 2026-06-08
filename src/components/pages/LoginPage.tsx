@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Turnstile } from "react-turnstile";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { useAuth } from "@/lib/auth";
 import { AuthBrandPanel } from "@/components/auth/AuthBrandPanel";
@@ -63,9 +63,6 @@ export function LoginPage() {
     <div className="auth-layout">
       <AuthBrandPanel />
       <main className="auth-main">
-        <div className="auth-top">
-          <Link href="/" className="auth-back"><ArrowLeft size={14} />Kembali ke Beranda</Link>
-        </div>
         <div className="auth-card-wrap">
           <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="auth-form-card">
             <div className="auth-heading">
@@ -93,18 +90,20 @@ export function LoginPage() {
               </label>
               <label className="auth-check-row">
                 <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
-                <span>Ingat saya</span>
+                <span>Ingat saya di perangkat ini</span>
               </label>
-              <Turnstile
-                key={turnstileKey}
-                sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-                onVerify={setTurnstileToken}
-                onExpire={() => resetTurnstile(setTurnstileToken, setTurnstileKey)}
-                onError={() => resetTurnstile(setTurnstileToken, setTurnstileKey)}
-                theme="auto"
-                appearance="always"
-                size="flexible"
-              />
+              <div className="auth-turnstile">
+                <Turnstile
+                  key={turnstileKey}
+                  sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                  onVerify={setTurnstileToken}
+                  onExpire={() => setTurnstileToken(null)}
+                  onError={() => setTurnstileToken(null)}
+                  theme="auto"
+                  appearance="always"
+                  size="flexible"
+                />
+              </div>
               <button className="auth-submit" disabled={loading || !turnstileToken}>
                 {loading ? <><Loader2 className="animate-spin" size={16} />Memproses...</> : <>Masuk Sekarang<ArrowRight size={16} /></>}
               </button>

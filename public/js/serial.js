@@ -189,6 +189,7 @@
   }
 
   function filterAndSearchItems(items) {
+    items = uniqueItems(items);
     if (!state.keyword) return filterItems(items);
     const queryTokens = tokenize(state.keyword);
     return items.filter((item) => {
@@ -198,7 +199,20 @@
   }
 
   function filterItems(items) {
-    return items.filter((item) => !state.year || getItemYear(item) === state.year);
+    return uniqueItems(items).filter((item) => !state.year || getItemYear(item) === state.year);
+  }
+
+  function uniqueItems(items) {
+    const seen = new Set();
+    return (items || []).filter((item) => {
+      const titleKey = String(D.cleanTitle?.(item.title) || item.title || '').trim().toLowerCase();
+      const key = item.id ? `id:${item.id}` : `title:${titleKey}`;
+      const titleSeenKey = titleKey ? `title:${titleKey}` : '';
+      if (!key || seen.has(key) || (titleSeenKey && seen.has(titleSeenKey))) return false;
+      seen.add(key);
+      if (titleSeenKey) seen.add(titleSeenKey);
+      return true;
+    });
   }
   // ──────────────────────────────────────────────────────────────────────────
 
@@ -286,9 +300,81 @@
     }
   }
 
+  function posterSource(item) {
+    return item?.cover || item?.coverWap || item?.image || item?.detailCover || item?.poster || item?.thumbnail || item?.thumb || item?.verticalCover ||
+      item?.images?.poster || item?.images?.cover || item?.images?.vertical || item?.details?.cover || item?.details?.poster || '';
+  }
+
+  function hasPosterVisual(item) {
+    const url = String(posterSource(item) || '').trim();
+    return Boolean(url && !url.includes('placehold.co'));
+  }
+
+  async function fetchDetailForPoster(item) {
+    let lastDrama = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const res = await D.Platforms[platform].detail(item.id);
+        const raw = D.unwrap(res) || {};
+        const drama = raw.data || raw || {};
+        lastDrama = drama;
+        if (hasPosterVisual(drama)) return drama;
+      } catch (_) {
+        // Retry a couple of times because some upstream detail responses are flaky.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 250 + attempt * 300));
+    }
+    return lastDrama;
+  }
+
+  async function enrichPosterItems(items) {
+    const missing = (items || []).filter((item) => item?.id && !hasPosterVisual(item));
+    if (!missing.length) return items;
+
+    let changed = false;
+    const enriched = await Promise.all((items || []).map(async (item) => {
+      if (!item?.id || hasPosterVisual(item)) return item;
+      try {
+        if (heroDetailCache.has(item.id) && hasPosterVisual(heroDetailCache.get(item.id))) {
+          changed = true;
+          return { ...item, ...heroDetailCache.get(item.id) };
+        }
+        const drama = await fetchDetailForPoster(item);
+        if (!hasPosterVisual(drama)) return item;
+        changed = true;
+        const nestedPoster = posterSource(drama);
+        const result = {
+          ...item,
+          title: drama.title || item.title,
+          cover: drama.cover || nestedPoster || item.cover,
+          coverWap: drama.coverWap || item.coverWap,
+          image: drama.image || item.image,
+          detailCover: drama.detailCover || item.detailCover,
+          poster: drama.poster || item.poster,
+          thumbnail: drama.thumbnail || item.thumbnail,
+          verticalCover: drama.verticalCover || item.verticalCover,
+          banner: drama.banner || item.banner,
+        };
+        heroDetailCache.set(item.id, result);
+        return result;
+      } catch (_) {
+        return item;
+      }
+    }));
+
+    return changed ? enriched : items;
+  }
+
   function renderRail(container, items, opts = {}) {
     if (!items.length) {
       container.innerHTML = `<div class="text-sm text-white/45 px-2">${D.t('serial.empty_data')}</div>`;
+      return;
+    }
+    if (!opts.enriched && items.some((item) => !hasPosterVisual(item))) {
+      container.innerHTML = D.buildSkeletons(Math.min(items.length, 8));
+      enrichPosterItems(items).then((nextItems) => {
+        renderRail(container, nextItems, { ...opts, enriched: true });
+      });
       return;
     }
     container.innerHTML = items.map((it, i) => D.buildPoster(it, platform, {
@@ -297,9 +383,16 @@
     window.refreshIcons?.();
   }
 
-  function renderGrid(container, items) {
+  function renderGrid(container, items, opts = {}) {
     if (!items.length) {
       container.innerHTML = emptyMessage(D.t('serial.empty'));
+      return;
+    }
+    if (!opts.enriched && items.some((item) => !hasPosterVisual(item))) {
+      container.innerHTML = D.buildSkeletons(Math.min(items.length, 12));
+      enrichPosterItems(items).then((nextItems) => {
+        renderGrid(container, nextItems, { enriched: true });
+      });
       return;
     }
     container.innerHTML = items.map((it) => D.buildPoster(it, platform)).join('');
@@ -339,7 +432,7 @@
   // ── Render search results dengan label progress ────────────────────────────
   function renderSearchSections(allItems, isDone) {
     const queryTokens = tokenize(state.keyword);
-    const matched = allItems.filter((item) => {
+    const matched = uniqueItems(allItems).filter((item) => {
       if (state.year && getItemYear(item) !== state.year) return false;
       return searchScore(item, queryTokens) > 0;
     });
@@ -356,6 +449,7 @@
   }
 
   function renderSections(items) {
+    items = uniqueItems(items);
     if (state.keyword) {
       renderSearchSections(items, true);
       return;
@@ -438,6 +532,7 @@
           ...item,
           title: drama.title || item.title,
           cover: drama.cover || item.cover,
+          coverWap: drama.coverWap || item.coverWap,
           banner: drama.banner || drama.cover || item.banner || item.cover,
           image: drama.image || drama.cover || item.image,
           synopsis: synopsisOf(drama) || synopsisOf(item),

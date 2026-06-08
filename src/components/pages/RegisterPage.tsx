@@ -93,7 +93,7 @@ export function RegisterPage() {
       <AuthBrandPanel />
       <main className="auth-main auth-main-scroll">
         <div className="auth-top">
-          <Link href="/" className="auth-back"><ArrowLeft size={14} />Kembali ke Beranda</Link>
+          <Link href="/" className="auth-back"><ArrowLeft size={14} />Kembali ke Login</Link>
         </div>
         <div className="auth-card-wrap">
           <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="auth-form-card">
@@ -111,12 +111,14 @@ export function RegisterPage() {
                 <ul>{checks.map((c) => <li key={c.id} className={c.ok ? "is-ok" : ""}>{c.ok ? <Check size={12} /> : <X size={12} />}{c.label}</li>)}</ul>
               </div>
               <label><span>Konfirmasi password</span><div className="auth-field"><Lock size={16} /><input type={showConfirm ? "text" : "password"} autoComplete="new-password" placeholder="Ulangi password" value={confirm} onChange={(e) => setConfirm(e.target.value)} /><button type="button" onClick={() => setShowConfirm((v) => !v)}>{showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></label>
-              {confirm && <p className={password === confirm ? "auth-inline-ok" : "auth-inline-error"}>{password === confirm ? "Password cocok" : "Password tidak cocok"}</p>}
+              {confirm && <p className={password === confirm ? "adanuth-inline-ok" : "auth-inline-error"}>{password === confirm ? "Password cocok" : "Password tidak cocok"}</p>}
               <label className="auth-check-row">
                 <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} />
-                <span>Saya menyetujui syarat dan ketentuan</span>
+                <span>Saya menyetujui ketentuan layanan dan kebijakan privasi.</span>
               </label>
-              <Turnstile key={turnstileKey} sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!} onVerify={setTurnstileToken} onExpire={() => resetTurnstile(setTurnstileToken, setTurnstileKey)} onError={() => resetTurnstile(setTurnstileToken, setTurnstileKey)} theme="auto" appearance="always" size="flexible" />
+              <div className="auth-turnstile">
+                <Turnstile key={turnstileKey} sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!} onVerify={setTurnstileToken} onExpire={() => setTurnstileToken(null)} onError={() => setTurnstileToken(null)} theme="auto" appearance="always" size="flexible" />
+              </div>
               <button className="auth-submit" disabled={loading || !turnstileToken || !acceptedTerms}>{loading ? <><Loader2 className="animate-spin" size={16} />Memproses...</> : <>Buat Akun<ArrowRight size={16} /></>}</button>
             </form>
             <p className="auth-switch">Sudah punya akun? <Link href="/login">Masuk</Link></p>

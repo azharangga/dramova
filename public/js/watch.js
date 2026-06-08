@@ -1405,7 +1405,11 @@
   const DOUBLE_TAP_MS = 320;
 
   function isMobileViewport() {
-    return window.matchMedia?.('(max-width: 767.98px)').matches;
+    return window.matchMedia?.('(max-width: 767.98px), (pointer: coarse)').matches;
+  }
+
+  function isTouchLikePointer(e) {
+    return e?.pointerType === 'touch' || e?.pointerType === 'pen';
   }
 
   function isInteractiveTarget(target) {
@@ -1486,7 +1490,8 @@
       const rect = dom.playerInner.getBoundingClientRect();
       const side = e.clientX < rect.left + rect.width / 2 ? 'left' : 'right';
       const now = Date.now();
-      const isDoubleTap = isMobileViewport()
+      const mobileGesture = isMobileViewport() || (document.fullscreenElement && isTouchLikePointer(e));
+      const isDoubleTap = mobileGesture
         && lastTap.side === side
         && now - lastTap.time <= DOUBLE_TAP_MS
         && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 80;
@@ -1507,7 +1512,7 @@
         const isHidden = dom.playerInner.classList.contains('controls-hidden');
         if (isHidden) showOverlayUI();
         else if (!dom.video.paused && !dom.video.ended) setOverlayVisible(false);
-      }, isMobileViewport() ? TAP_DELAY_MS : 0);
+      }, mobileGesture ? TAP_DELAY_MS : 0);
     }, { passive: true });
 
     on(dom.playerInner, 'pointercancel', () => { gesture = null; }, { passive: true });

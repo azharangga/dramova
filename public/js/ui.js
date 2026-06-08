@@ -163,6 +163,10 @@
     }[ch]));
   }
 
+  function escapeAttr(value) {
+    return escapeHTML(value).replace(/`/g, '&#96;');
+  }
+
   function cleanTitle(title) {
     if (!title) return '';
     // Strip "Sub Indo - Drakor.id", "Sub Indo - Serial.id", etc.
@@ -197,7 +201,10 @@
 
   function upgradeImageUrl(raw, mode = 'poster') {
     if (!raw) return '';
-    let url = String(raw)
+    let url = String(raw);
+    if (url.includes('assets.d-cdn.me/')) return url;
+
+    url = url
       .replace(/[-_]\d{2,4}x\d{2,4}(\.\w{3,4})(\?.*)?$/, '$1$2')
       .replace(/\?(?:w|width|h|height|size|resize|fit)=[^&]*(?:&(?:w|width|h|height|size|resize|fit)=[^&]*)*/i, '');
     url = url.replace(/\/\d{2,4}x\d{2,4}\//, mode === 'hero' ? '/1280x720/' : '/600x900/');
@@ -207,15 +214,49 @@
     return url;
   }
 
+  function imageCandidates(item, mode = 'poster') {
+    const keys = mode === 'hero'
+      ? ['banner', 'detailCover', 'cover', 'coverWap', 'image', 'poster', 'thumbnail', 'thumb']
+      : ['cover', 'coverWap', 'image', 'detailCover', 'poster', 'thumbnail', 'thumb', 'verticalCover', 'banner'];
+    const seen = new Set();
+    return keys
+      .map((key) => upgradeImageUrl(item?.[key], mode))
+      .filter((url) => {
+        if (!url || seen.has(url)) return false;
+        seen.add(url);
+        return true;
+      });
+  }
+
   function bestImage(item, mode = 'poster') {
-    const raw = mode === 'hero'
-      ? (item.banner || item.detailCover || item.cover || item.image || '')
-      : (item.cover || item.image || item.detailCover || item.banner || '');
-    return upgradeImageUrl(raw, mode) || placeholderImg(item.title);
+    return imageCandidates(item, mode)[0] || placeholderImg(item.title);
+  }
+
+  function loadPosterFallback(img) {
+    if (!img) return;
+    let candidates = [];
+    try {
+      candidates = JSON.parse(decodeURIComponent(img.dataset.fallbacks || '[]'));
+    } catch (_) {
+      candidates = [];
+    }
+
+    const index = Number(img.dataset.fallbackIndex || 0) + 1;
+    if (index < candidates.length) {
+      img.dataset.fallbackIndex = String(index);
+      img.src = candidates[index];
+      return;
+    }
+
+    img.onerror = null;
+    img.src = img.dataset.placeholder || placeholderImg(img.alt);
   }
 
   function buildPoster(item, platform, opts = {}) {
-    const img = bestImage(item, 'poster');
+    const fallbackImages = imageCandidates(item, 'poster');
+    const img = fallbackImages[0] || placeholderImg(item.title);
+    const fallbackData = encodeURIComponent(JSON.stringify(fallbackImages));
+    const placeholder = placeholderImg(item.title);
     const eps = episodeCount(item);
     const showEpisodeBadge = eps > 0 && !(platform === 'kdrama' && eps <= 1);
     const platformLabel = (D.Platforms?.[platform]?.label) || platform;
@@ -237,8 +278,11 @@
                 style="background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase;">
             ${platformLabel}
           </span>
-          <img src="${thumbUrl}" alt="${item.title || ''}" loading="lazy"
-               onerror="this.src='${placeholderImg(item.title)}'"
+          <img src="${escapeAttr(thumbUrl)}" alt="${escapeAttr(item.title || '')}" loading="lazy"
+               data-fallbacks="${escapeAttr(fallbackData)}"
+               data-fallback-index="0"
+               data-placeholder="${escapeAttr(placeholder)}"
+               onerror="window.DramSi.loadPosterFallback(this)"
                onload="this.classList.add('is-loaded')"
                class="h-full w-full object-cover poster-card__img" />
           <span class="pointer-events-none absolute inset-0"
@@ -457,7 +501,7 @@
     openSheet, closeSheet, openShareSheet,
     showPlatformSheet, renderPlatformTabs,
     buildPoster, buildSkeletons, buildHeroSkeleton, buildErrorState, placeholderImg,
-    heroImage, episodeCount, cleanTitle,
+    heroImage, episodeCount, cleanTitle, loadPosterFallback,
     withRetry, lazyLoadImages,
   });
 
