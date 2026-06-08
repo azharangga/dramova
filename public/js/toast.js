@@ -22,7 +22,7 @@
     success: '#2BA641',
     error:   '#f3727f',
     warning: '#ffa42b',
-    info:    '#539df5',
+    info:    '#2BA641',
     loading: '#4d4d4d',
   };
 

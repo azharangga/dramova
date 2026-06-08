@@ -15,14 +15,13 @@ export default function DetailScaffold() {
     <>
       <section className="detail-page">
         <div className="detail-backdrop" aria-hidden="true">
-          <img id="detailBackdrop" src="" alt="" className="detail-backdrop-img" />
+          <img id="detailBackdrop" alt="" className="detail-backdrop-img" />
         </div>
         <div className="detail-layout">
           <div className="detail-poster-col">
             <div className="detail-poster-wrap skeleton">
               <img
                 id="detailCover"
-                src=""
                 alt=""
                 className="detail-poster-img"
                 style={{ display: "none" }}

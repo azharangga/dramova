@@ -1,5 +1,6 @@
 import SectionHeader from "@/components/SectionHeader";
 import { PosterSkeletonList } from "@/components/Skeletons";
+import { Button } from "@/components/ui/button";
 import type { ReactNode } from "react";
 
 type MediaSectionProps = {
@@ -59,26 +60,16 @@ export function MediaGridSection({
       />
       <PosterSkeletonList id={gridId} kind="grid" count={12} />
       <div className="mt-8 flex justify-center">
-        <button
+        <Button
           id="loadMoreBtn"
           hidden
-          className={`inline-flex ${
-            loadMoreMinHeight ? "min-h-11 " : ""
-          }items-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold transition ${
-            loadMoreMinHeight ? "hover:opacity-90 " : ""
-          }active:scale-95`}
-          style={{
-            borderRadius: "9999px",
-            border: "1px solid var(--border-muted)",
-            background: "var(--bg-raised)",
-            color: "var(--text-primary)",
-            letterSpacing: "1.4px",
-            textTransform: "uppercase",
-          }}
+          variant="outline"
+          size="lg"
+          className={loadMoreMinHeight ? "min-h-11 uppercase tracking-[1.4px]" : "uppercase tracking-[1.4px]"}
         >
           <i data-lucide="chevron-down" className="h-4 w-4" />
           <span data-i18n="common.load_more">Muat lebih banyak</span>
-        </button>
+        </Button>
       </div>
     </section>
   );

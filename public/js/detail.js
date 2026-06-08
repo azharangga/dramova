@@ -103,6 +103,7 @@
       setTimeout(() => { backdrop.remove(); modal.remove(); }, 250);
     }
     backdrop.addEventListener('click', close);
+    modal.addEventListener('click', close);
     modal.querySelector('.cast-modal-close').addEventListener('click', close);
   }
 

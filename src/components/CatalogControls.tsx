@@ -1,3 +1,6 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
 type Tab = {
   id: string;
   label: string;
@@ -23,28 +26,21 @@ export function CatalogTabs({
       aria-label={label}
     >
       {tabs.map((tab, index) => (
-        <button
+        <Button
           key={tab.id}
           id={idPrefix ? `${idPrefix}${tab.id[0].toUpperCase()}${tab.id.slice(1)}` : undefined}
           role="tab"
           aria-selected={index === 0 ? "true" : "false"}
           {...{ [dataAttribute]: tab.id }}
-          className="serial-tab-btn inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition active:scale-95"
+          variant={index === 0 ? "default" : "outline"}
+          size="default"
+          className="serial-tab-btn shrink-0 tracking-[0.5px]"
           style={{
-            background: index === 0 ? "var(--accent)" : "var(--bg-raised)",
-            color:
-              index === 0
-                ? "var(--accent-control-text)"
-                : "var(--text-secondary)",
-            border:
-              index === 0
-                ? "1px solid transparent"
-                : "1px solid var(--border-muted)",
             letterSpacing: "0.5px",
           }}
         >
           {tab.label}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -80,57 +76,50 @@ export function CatalogSearchControls({
           className="h-4 w-4 shrink-0"
           style={{ color: "var(--text-secondary)" }}
         />
-        <input
+        <Input
           id={`${prefix}SearchInput`}
           type="search"
           placeholder={placeholder}
           data-i18n-placeholder={placeholderI18n}
-          className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none"
+          className="h-auto min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-sm font-semibold shadow-none focus-visible:ring-0"
           style={{ color: "var(--text-primary)" }}
         />
-        <button
+        <Button
           id={`${prefix}SearchClear`}
           type="button"
           hidden
           aria-label="Hapus pencarian"
-          className="grid h-8 w-8 shrink-0 place-items-center transition active:scale-90"
-          style={{ borderRadius: "50%", color: "var(--text-secondary)" }}
+          variant="ghost"
+          size="icon-sm"
+          className="shrink-0"
         >
           <i data-lucide="x" className="h-4 w-4" />
-        </button>
+        </Button>
       </form>
-      <button
+      <Button
         id={`${prefix}YearFilter`}
         type="button"
         aria-label="Filter tahun"
-        className="grid h-11 w-11 shrink-0 place-items-center transition active:scale-95"
-        style={{
-          borderRadius: "9999px",
-          border: "1px solid var(--border-muted)",
-          background: "var(--bg-raised)",
-          color: "var(--text-secondary)",
-        }}
+        variant="outline"
+        size="icon-lg"
+        className="shrink-0"
       >
         <i data-lucide="calendar" className="h-4 w-4 shrink-0" />
         <span id={`${prefix}YearLabel`} className="sr-only">
           Semua Tahun
         </span>
-      </button>
-      <button
+      </Button>
+      <Button
         id={`${prefix}FilterReset`}
         type="button"
         hidden
         aria-label="Reset filter"
-        className="grid h-11 w-11 shrink-0 place-items-center transition active:scale-95"
-        style={{
-          borderRadius: "9999px",
-          border: "1px solid var(--border-muted)",
-          background: "var(--bg-raised)",
-          color: "var(--text-secondary)",
-        }}
+        variant="outline"
+        size="icon-lg"
+        className="shrink-0"
       >
         <i data-lucide="rotate-ccw" className="h-4 w-4" />
-      </button>
+      </Button>
     </div>
   );
 }

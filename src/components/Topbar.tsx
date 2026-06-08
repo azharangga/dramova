@@ -3,7 +3,7 @@ export default function Topbar() {
     <header id="topBar" className="topbar-shell sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-3 px-4 sm:gap-4 md:grid md:grid-cols-[1fr_auto_1fr] lg:h-16">
         <a href="/" className="topbar-brand flex shrink-0 items-center" aria-label="Dramova">
-          <img src="/img/logo.png" alt="Dramova" className="h-6" style={{ width: "auto" }} />
+          <img src="/img/logo.png" alt="Dramova" className="h-5.5" style={{ width: "auto" }} />
         </a>
         <nav className="hidden justify-self-center md:flex items-center gap-1.5 rounded-full p-1" aria-label="Navigasi desktop" style={{ background: "color-mix(in srgb, var(--bg-raised) 78%, transparent)", border: "1px solid var(--border-color)" }}>
           <a href="/" data-route="/" className="dnav-link inline-flex h-8 items-center px-4 text-sm font-bold transition" style={{ borderRadius: "9999px", color: "var(--text-secondary)", letterSpacing: "0.14px" }}><span data-i18n="nav.home">Beranda</span></a>

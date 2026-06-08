@@ -2,6 +2,8 @@ import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
 import PageScript from "@/components/PageScript";
 import { PosterSkeletonList } from "@/components/Skeletons";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function DiscoverPage() {
   return (
@@ -11,18 +13,18 @@ export default function DiscoverPage() {
       <div className="mt-6 flex items-center gap-3">
         <div className="search-input-wrap relative flex flex-1 items-center gap-2 rounded-full px-4 py-2.5" style={{ background: "var(--bg-raised)", border: "1px solid var(--border-color)", minHeight: "44px" }}>
           <i data-lucide="search" className="h-4 w-4 shrink-0" style={{ color: "var(--text-tertiary)" }}></i>
-          <input id="discoverSearch" type="text" className="w-full bg-transparent text-sm font-medium outline-none" style={{ color: "var(--text-primary)" }} placeholder="Cari film, serial, judul, kata kunci..." data-i18n-placeholder="search.placeholder" />
-          <button id="discoverSearchClear" type="button" hidden className="shrink-0 p-0.5" style={{ color: "var(--text-tertiary)" }} aria-label="Hapus"><i data-lucide="x" className="h-4 w-4"></i></button>
+          <Input id="discoverSearch" type="text" className="h-auto w-full border-0 bg-transparent px-0 py-0 text-sm font-medium shadow-none focus-visible:ring-0" style={{ color: "var(--text-primary)" }} placeholder="Cari film, serial, judul, kata kunci..." data-i18n-placeholder="search.placeholder" />
+          <Button id="discoverSearchClear" type="button" hidden variant="ghost" size="icon-sm" className="shrink-0" aria-label="Hapus"><i data-lucide="x" className="h-4 w-4"></i></Button>
         </div>
-        <button id="discoverFilterBtn" type="button" className="inline-flex h-11 w-11 shrink-0 items-center justify-center" style={{ borderRadius: "9999px", border: "1px solid var(--border-muted)", background: "var(--bg-raised)", color: "var(--text-secondary)" }} aria-label="Pilih Kategori">
+        <Button id="discoverFilterBtn" type="button" variant="outline" size="icon-lg" className="shrink-0" aria-label="Pilih Kategori">
           <i data-lucide="sliders-horizontal" className="h-4 w-4"></i>
-        </button>
+        </Button>
       </div>
 
       <section className="section-block !mt-7">
         <PosterSkeletonList id="discoverGrid" kind="grid" count={12} />
         <div className="mt-8 flex justify-center">
-          <button id="loadMoreBtn" hidden className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold transition active:scale-95" style={{ borderRadius: "9999px", border: "1px solid var(--border-muted)", background: "var(--bg-raised)", color: "var(--text-primary)", letterSpacing: "1.4px", textTransform: "uppercase" }}><i data-lucide="chevron-down" className="h-4 w-4"></i><span data-i18n="common.load_more">Muat lebih banyak</span></button>
+          <Button id="loadMoreBtn" hidden variant="outline" size="lg" className="uppercase tracking-[1.4px]"><i data-lucide="chevron-down" className="h-4 w-4"></i><span data-i18n="common.load_more">Muat lebih banyak</span></Button>
         </div>
       </section>
       <PageScript id="page-discover" src="/js/discover.js" />

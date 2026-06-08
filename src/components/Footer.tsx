@@ -5,7 +5,7 @@ export default function Footer() {
         <div className="grid items-start gap-10 md:grid-cols-[minmax(0,1.4fr)_minmax(160px,.6fr)_minmax(260px,.8fr)]">
           <div className="pt-0">
             <a href="/" className="inline-flex items-center" aria-label="Dramova">
-              <img src="/img/logo.png" alt="Dramova" className="h-6" style={{ width: "auto" }} />
+              <img src="/img/logo.png" alt="Dramova" className="h-5.5" style={{ width: "auto" }} />
             </a>
             <p className="mt-4 max-w-lg text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }} data-i18n="footer.description">Platform streaming modern untuk menikmati berbagai cerita menarik, mulai dari movie hingga serial favorit, dalam pengalaman menonton yang nyaman, ringan, dan immersive.</p>
           </div>

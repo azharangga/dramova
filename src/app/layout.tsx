@@ -57,7 +57,7 @@ export default function RootLayout({
                   base:'#0f0f0f',surface:'#161616',raised:'#1c1c1c',
                   card:'#222222',border:'#282828',muted:'#3a3a3a',
                   green:'#2BA641','green-dark':'#238A36',silver:'#a0a0a0',
-                  'near-white':'#f1f1f1',negative:'#ff6b6b',warning:'#ffb347',info:'#5ba4f5',
+                  'near-white':'#f1f1f1',negative:'#ff6b6b',warning:'#ffb347',info:'#2BA641',
                 },
                 fontFamily:{sans:['Inter','system-ui','sans-serif']},
                 borderRadius:{pill:'500px','full-pill':'9999px'},
