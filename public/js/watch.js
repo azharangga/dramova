@@ -2,6 +2,23 @@
    Watch page · player + episode picker + history + favorites + auto-next.
    ===================================================================== */
 (function () {
+  window.__DRAMOVA_WATCH_CLEANUP__?.();
+  const watchCleanups = [];
+  let watchDisposed = false;
+  window.__DRAMOVA_WATCH_CLEANUP__ = () => {
+    if (watchDisposed) return;
+    watchDisposed = true;
+    while (watchCleanups.length) {
+      try { watchCleanups.pop()(); } catch (_) {}
+    }
+    document.body.classList.remove('is-watch', 'is-vertical', 'is-horizontal', 'watch-fullscreen-active');
+  };
+  function on(target, eventName, handler, options) {
+    if (!target?.addEventListener) return;
+    target.addEventListener(eventName, handler, options);
+    watchCleanups.push(() => target.removeEventListener(eventName, handler, options));
+  }
+
   const D = window.DramSi;
 
   // Parse from path: /shorts/watch/:platform/:id or /series/watch/:platform/:id
@@ -82,6 +99,7 @@
     pendingResumeTime: 0,
     seeking: false,
     feedbackTimer: null,
+    playbackLoadingTimer: null,
     autoPipActive: false,
     pipRequesting: false,
     resumeToast: null,
@@ -107,7 +125,8 @@
   // Aktifkan mode immersive di mobile (CSS akan menyembunyikan topbar + bottom nav)
   document.body.classList.add('is-watch');
   document.body.classList.add(orientation === 'vertical' ? 'is-vertical' : 'is-horizontal');
-  window.addEventListener('beforeunload', () => {
+  on(window, 'pagehide', window.__DRAMOVA_WATCH_CLEANUP__);
+  on(window, 'beforeunload', () => {
     document.body.classList.remove('is-watch', 'is-vertical', 'is-horizontal');
   });
 
@@ -128,8 +147,23 @@
   }
   function showWatchLoading(message) {
     dom.overlay.classList.remove('is-error');
-    showOverlay(message);
+    showOverlay(message || '');
   }
+  function clearPlaybackLoading() {
+    clearTimeout(state.playbackLoadingTimer);
+    state.playbackLoadingTimer = null;
+  }
+  function showPlaybackLoadingSoon(message, delay = 180) {
+    clearPlaybackLoading();
+    state.playbackLoadingTimer = setTimeout(() => {
+      showWatchLoading(message || D.t('player.loading'));
+    }, delay);
+  }
+  function hidePlaybackLoading() {
+    clearPlaybackLoading();
+    hideOverlay();
+  }
+  watchCleanups.push(clearPlaybackLoading);
 
   function cleanEpisodeTitle(title, ep) {
     const text = String(title || '').trim();
@@ -228,6 +262,8 @@
   function seekBy(delta) {
     if (!dom.video) return;
     const duration = Number.isFinite(dom.video.duration) ? dom.video.duration : 0;
+    const wasPlaying = !dom.video.paused && !dom.video.ended;
+    if (wasPlaying) showPlaybackLoadingSoon(D.t('player.loading'), 220);
     dom.video.currentTime = Math.min(Math.max(0, dom.video.currentTime + delta), duration || Infinity);
     showSeekFeedback(delta);
     updateTimeControls();
@@ -253,16 +289,26 @@
 
   async function toggleFullscreen() {
     const target = dom.playerWrap || dom.playerInner;
+    const enteringFullscreen = !document.fullscreenElement;
     document.body.classList.add('watch-fullscreen-active');
     try {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       } else if (target?.requestFullscreen) {
         await target.requestFullscreen();
+        if (isMobileViewport() && screen.orientation?.lock) {
+          screen.orientation.lock('landscape').catch(() => {});
+        }
       } else if (target?.webkitRequestFullscreen) {
         target.webkitRequestFullscreen();
+        if (isMobileViewport() && screen.orientation?.lock) {
+          screen.orientation.lock('landscape').catch(() => {});
+        }
       }
     } catch (_) {}
+    if (!enteringFullscreen && screen.orientation?.unlock) {
+      try { screen.orientation.unlock(); } catch (_) {}
+    }
     if (!document.fullscreenElement) document.body.classList.remove('watch-fullscreen-active');
     updateModeButtons();
   }
@@ -273,8 +319,6 @@
     const playPromise = video.play();
     if (playPromise?.catch) {
       playPromise.catch(() => {
-        showOverlayUI();
-        showSeekFeedback(0, 'Tap untuk putar');
         updatePlayerControls();
       });
     }
@@ -364,6 +408,7 @@
       showWatchError(D.t('player.video_unavailable'));
       return;
     }
+    showWatchLoading(D.t('player.loading'));
 
     const video = dom.video;
     const isHls = type === 'hls' || /\.m3u8(\?|$)/i.test(url);
@@ -978,7 +1023,6 @@
         // Store signed proxy URL for maybeProxy/viaProxy fallback
         state._signedProxyUrl = state.currentQuality._signedProxy || '';
         setSrc(state.currentQuality.url, state.currentQuality.type, { seamless });
-        if ((!seamless || state.isInitialStream) && state.pendingResumeTime <= 12) hideOverlay();
         state.isInitialStream = false;
         prefetchAround(ep);
       } else {
@@ -1046,7 +1090,11 @@
   });
   dom.fullscreenBtn?.addEventListener('click', toggleFullscreen);
   document.addEventListener('fullscreenchange', () => {
-    document.body.classList.toggle('watch-fullscreen-active', Boolean(document.fullscreenElement));
+    const fullscreenActive = Boolean(document.fullscreenElement);
+    document.body.classList.toggle('watch-fullscreen-active', fullscreenActive);
+    if (!fullscreenActive && screen.orientation?.unlock) {
+      try { screen.orientation.unlock(); } catch (_) {}
+    }
     updateModeButtons();
   });
   dom.video.addEventListener('enterpictureinpicture', updateModeButtons);
@@ -1106,7 +1154,7 @@
   });
   dom.video.addEventListener('loadeddata', () => {
     clearTimeout(state.fallbackTimer);
-    hideOverlay();
+    hidePlaybackLoading();
     state.resumeToast?.dismiss?.();
     state.resumeToast = null;
 
@@ -1146,6 +1194,7 @@
     }
   });
   dom.video.addEventListener('error', () => {
+    clearPlaybackLoading();
     state.resumeToast?.dismiss?.();
     state.resumeToast = null;
     if (state.lastSrc && !state.triedProxy) {
@@ -1157,6 +1206,15 @@
   });
   ['play', 'pause', 'volumechange', 'ratechange', 'durationchange', 'progress', 'seeking', 'seeked'].forEach((eventName) => {
     dom.video.addEventListener(eventName, updatePlayerControls);
+  });
+  ['canplay', 'canplaythrough', 'playing', 'seeked'].forEach((eventName) => {
+    dom.video.addEventListener(eventName, hidePlaybackLoading);
+  });
+  ['waiting', 'stalled'].forEach((eventName) => {
+    dom.video.addEventListener(eventName, () => showPlaybackLoadingSoon(D.t('player.loading'), 160));
+  });
+  dom.video.addEventListener('seeking', () => {
+    if (!dom.video.paused && !dom.video.ended) showPlaybackLoadingSoon(D.t('player.loading'), 220);
   });
   dom.video.addEventListener('ended', autoNext);
   window.addEventListener('beforeunload', writeProgress);
@@ -1296,62 +1354,7 @@
   // ── Swipe gesture ↑/↓ untuk ganti episode ────────────────────
   // Mendengarkan di player container supaya bisa di-swipe dari mana saja
   // (termasuk area tengah video). Tetap tidak menelan klik tombol.
-  (function bindSwipe() {
-    const target = dom.playerInner;
-    if (!target) return;
-    let sx = 0, sy = 0, st = 0, tracking = false;
-    let wheelLock = false;
-    const THRESHOLD_Y = 70;   // jarak minimum vertikal
-    const MAX_OFFSET_X = 60;  // toleransi horizontal
-    const MAX_DURATION = 800; // ms
-
-    target.addEventListener('touchstart', (e) => {
-      if (e.touches.length !== 1) return;
-      // Jangan menangkap swipe yang dimulai di tombol/anchor
-      if (e.target.closest('button, a')) { tracking = false; return; }
-      sx = e.touches[0].clientX;
-      sy = e.touches[0].clientY;
-      st = Date.now();
-      tracking = true;
-    }, { passive: true });
-
-    target.addEventListener('touchend', (e) => {
-      if (!tracking) return;
-      tracking = false;
-      const t = e.changedTouches[0];
-      const dx = t.clientX - sx;
-      const dy = t.clientY - sy;
-      const dt = Date.now() - st;
-      if (dt > MAX_DURATION) return;
-      if (Math.abs(dx) > MAX_OFFSET_X) return;
-      if (Math.abs(dy) < THRESHOLD_Y) return;
-
-      hideSwipeHint();
-      if (dy < 0) {
-        // swipe up → episode berikutnya
-        if (state.currentEp < state.episodes.length) gotoEp(state.currentEp + 1);
-      } else {
-        // swipe down → episode sebelumnya
-        if (state.currentEp > 1) gotoEp(state.currentEp - 1);
-      }
-    }, { passive: true });
-
-    target.addEventListener('wheel', (e) => {
-      // Only trigger episode change via wheel on mobile immersive (no page scroll)
-      // or when the page is not scrollable at the player position
-      if (!document.body.classList.contains('is-watch')) return;
-      if (window.matchMedia('(min-width: 768px)').matches) return;
-      if (e.target.closest('button, a')) return;
-      if (Math.abs(e.deltaY) < 35 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-      e.preventDefault();
-      if (wheelLock) return;
-      wheelLock = true;
-      hideSwipeHint();
-      if (e.deltaY > 0 && state.currentEp < state.episodes.length) gotoEp(state.currentEp + 1);
-      if (e.deltaY < 0 && state.currentEp > 1) gotoEp(state.currentEp - 1);
-      setTimeout(() => { wheelLock = false; }, 650);
-    }, { passive: false });
-  })();
+  // Swipe and tap gestures are handled by the unified pointer controller below.
 
   function hideSwipeHint() {
     if (dom.swipeHint && !dom.swipeHint.classList.contains('hidden-fade')) {
@@ -1366,70 +1369,166 @@
   // - Saat pause / loading, overlay selalu terlihat.
   const mobileOverlay = document.getElementById('mobileOverlay');
   let hideTimer = null;
-  const IDLE_MS = 2500;
+  let tapTimer = null;
+  let lastTap = { time: 0, side: '', x: 0, y: 0 };
+  const IDLE_MS = 2600;
+  const TAP_DELAY_MS = 230;
+  const DOUBLE_TAP_MS = 320;
+
+  function isMobileViewport() {
+    return window.matchMedia?.('(max-width: 767.98px)').matches;
+  }
+
+  function isInteractiveTarget(target) {
+    return Boolean(target?.closest?.('button, a, input, select, textarea, [role="button"], #watchControls, #mobileOverlay, #epSheet, #epSheetBackdrop'));
+  }
 
   function setOverlayVisible(visible) {
     mobileOverlay?.classList.toggle('is-hidden', !visible);
     dom.playerInner?.classList.toggle('controls-visible', visible);
     dom.playerInner?.classList.toggle('controls-hidden', !visible);
   }
+
+  function scheduleHide() {
+    clearTimeout(hideTimer);
+    if (dom.video.paused || dom.video.ended || dom.speedMenu?.hidden === false || dom.epSheet?.classList.contains('is-open')) return;
+    hideTimer = setTimeout(() => setOverlayVisible(false), IDLE_MS);
+  }
+
   function showOverlayUI() {
     setOverlayVisible(true);
     scheduleHide();
   }
-  function scheduleHide() {
+
+  function holdOverlayVisible() {
     clearTimeout(hideTimer);
-    if (dom.video.paused || dom.video.ended) return; // jangan auto-hide saat pause
-    hideTimer = setTimeout(() => setOverlayVisible(false), IDLE_MS);
+    setOverlayVisible(true);
   }
 
-  // Tap pada player → toggle overlay (kalau lagi tersembunyi → munculkan)
   if (dom.playerInner) {
-    dom.playerInner.addEventListener('click', (e) => {
-      if (e.target.closest('button, a, input')) {
+    let gesture = null;
+    let wheelLock = false;
+
+    on(dom.playerInner, 'pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (isInteractiveTarget(e.target)) {
+        holdOverlayVisible();
+        return;
+      }
+      gesture = {
+        id: e.pointerId,
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now(),
+        moved: false,
+      };
+    }, { passive: true });
+
+    on(dom.playerInner, 'pointermove', (e) => {
+      if (e.pointerType === 'mouse') {
         showOverlayUI();
         return;
       }
-      const isHidden = dom.playerInner.classList.contains('controls-hidden');
-      if (isHidden) {
-        showOverlayUI();
-      } else {
-        if (!dom.video.paused) setOverlayVisible(false);
+      if (!gesture || gesture.id !== e.pointerId) return;
+      if (Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) > 12) gesture.moved = true;
+    }, { passive: true });
+
+    on(dom.playerInner, 'pointerup', (e) => {
+      if (!gesture || gesture.id !== e.pointerId) return;
+      const g = gesture;
+      gesture = null;
+      if (isInteractiveTarget(e.target)) return;
+
+      const dx = e.clientX - g.x;
+      const dy = e.clientY - g.y;
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+      const elapsed = Date.now() - g.time;
+
+      if (elapsed < 800 && ady >= 72 && adx <= 64) {
+        hideSwipeHint();
+        if (dy < 0 && state.currentEp < state.episodes.length) gotoEp(state.currentEp + 1);
+        if (dy > 0 && state.currentEp > 1) gotoEp(state.currentEp - 1);
+        return;
       }
-    });
-    ['mousemove', 'pointermove'].forEach((evt) => {
-      dom.playerInner.addEventListener(evt, () => showOverlayUI(), { passive: true });
-    });
+
+      if (g.moved || elapsed > 520 || adx > 18 || ady > 18) return;
+
+      const rect = dom.playerInner.getBoundingClientRect();
+      const side = e.clientX < rect.left + rect.width / 2 ? 'left' : 'right';
+      const now = Date.now();
+      const isDoubleTap = isMobileViewport()
+        && lastTap.side === side
+        && now - lastTap.time <= DOUBLE_TAP_MS
+        && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 80;
+
+      if (isDoubleTap) {
+        clearTimeout(tapTimer);
+        tapTimer = null;
+        lastTap = { time: 0, side: '', x: 0, y: 0 };
+        seekBy(side === 'left' ? -10 : 10);
+        showOverlayUI();
+        return;
+      }
+
+      lastTap = { time: now, side, x: e.clientX, y: e.clientY };
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => {
+        tapTimer = null;
+        const isHidden = dom.playerInner.classList.contains('controls-hidden');
+        if (isHidden) showOverlayUI();
+        else if (!dom.video.paused && !dom.video.ended) setOverlayVisible(false);
+      }, isMobileViewport() ? TAP_DELAY_MS : 0);
+    }, { passive: true });
+
+    on(dom.playerInner, 'pointercancel', () => { gesture = null; }, { passive: true });
+
+    on(dom.playerInner, 'wheel', (e) => {
+      if (!document.body.classList.contains('is-watch')) return;
+      if (!isMobileViewport()) return;
+      if (isInteractiveTarget(e.target)) return;
+      if (Math.abs(e.deltaY) < 35 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      if (wheelLock) return;
+      wheelLock = true;
+      hideSwipeHint();
+      if (e.deltaY > 0 && state.currentEp < state.episodes.length) gotoEp(state.currentEp + 1);
+      if (e.deltaY < 0 && state.currentEp > 1) gotoEp(state.currentEp - 1);
+      setTimeout(() => { wheelLock = false; }, 650);
+    }, { passive: false });
   }
 
-  // Sinkronkan dengan event video
-  dom.video.addEventListener('play', () => { showOverlayUI(); });
-  dom.video.addEventListener('playing', () => { scheduleHide(); });
-  dom.video.addEventListener('pause', () => { clearTimeout(hideTimer); setOverlayVisible(true); });
-  dom.video.addEventListener('ended', () => { clearTimeout(hideTimer); setOverlayVisible(true); });
-  dom.video.addEventListener('seeking', () => { showOverlayUI(); });
-  dom.video.addEventListener('waiting', () => { setOverlayVisible(true); });
+  on(dom.video, 'play', () => { showOverlayUI(); });
+  on(dom.video, 'playing', () => { scheduleHide(); });
+  on(dom.video, 'pause', () => { clearTimeout(hideTimer); setOverlayVisible(true); });
+  on(dom.video, 'ended', () => { clearTimeout(hideTimer); setOverlayVisible(true); });
+  on(dom.video, 'seeking', () => { showOverlayUI(); });
+  on(dom.video, 'waiting', () => { holdOverlayVisible(); });
 
-  // Saat overlay disentuh (tap tombol / hover), reset timer biar nggak hilang mendadak
-  ['touchstart', 'mousemove'].forEach((evt) => {
-    mobileOverlay?.addEventListener(evt, () => {
+  ['pointerdown', 'pointermove', 'mousemove'].forEach((evt) => {
+    on(mobileOverlay, evt, () => {
       if (mobileOverlay.classList.contains('is-hidden')) return;
-      scheduleHide();
+      holdOverlayVisible();
     }, { passive: true });
-    dom.controls?.addEventListener(evt, () => showOverlayUI(), { passive: true });
+    on(dom.controls, evt, () => holdOverlayVisible(), { passive: true });
   });
 
-  // Sembunyikan hint setelah beberapa detik atau saat user pertama kali tap player
-  setTimeout(hideSwipeHint, 4500);
-  setTimeout(() => {
+  const swipeHintTimer = setTimeout(hideSwipeHint, 4500);
+  const initialHideTimer = setTimeout(() => {
     if (!dom.video.paused && !dom.video.ended) setOverlayVisible(false);
   }, 2400);
-  dom.playerInner?.addEventListener('click', () => {
+  on(dom.playerInner, 'click', () => {
     setTimeout(hideSwipeHint, 1200);
   }, { once: true });
 
+  watchCleanups.push(() => {
+    clearTimeout(hideTimer);
+    clearTimeout(tapTimer);
+    clearTimeout(swipeHintTimer);
+    clearTimeout(initialHideTimer);
+  });
   // Keyboard shortcuts on watch page
-  document.addEventListener('keydown', (e) => {
+  on(document, 'keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (e.code === 'Space' || e.key === 'k' || e.key === 'K') {
       e.preventDefault();

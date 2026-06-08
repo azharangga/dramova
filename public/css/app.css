@@ -1992,16 +1992,23 @@ html.light #bottomNav {
 
 /* ── Watch page — mobile immersive ────────────────────────────── */
 @media (max-width: 767.98px) {
+  body:has(#watchRoot) #topBar,
+  body:has(#watchRoot) #bottomNav,
   body.is-watch #topBar,
   body.is-watch #bottomNav { display: none !important; }
+  body:has(#watchRoot),
   body.is-watch { padding-bottom: 0 !important; }
+  body:has(#watchRoot) main,
   body.is-watch main {
     padding: 0 !important;
     max-width: none !important;
     width: 100% !important;
   }
+  body:has(#watchRoot) .watch-root,
   body.is-watch .watch-root { margin: 0 !important; gap: 0 !important; }
+  body:has(#watchRoot) .meta-block,
   body.is-watch .meta-block { display: none !important; }
+  body:has(#watchRoot) .player-wrap,
   body.is-watch .player-wrap {
     position: fixed;
     inset: 0;
@@ -2012,12 +2019,14 @@ html.light #bottomNav {
     border-radius: 0 !important;
     z-index: 30;
   }
+  body:has(#watchRoot) .player-inner,
   body.is-watch .player-inner {
     aspect-ratio: auto !important;
     width: 100% !important;
     max-width: none !important;
     height: 100%;
   }
+  body:has(#watchRoot) #video { object-fit: contain; }
   body.is-watch.is-vertical  #video { object-fit: cover; }
   body.is-watch.is-horizontal #video { object-fit: contain; }
 }
@@ -2085,11 +2094,25 @@ html.light #bottomNav {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  color: rgba(255,255,255,.78);
-  background: rgba(0,0,0,.62);
+  gap: 10px;
+  color: rgba(255,255,255,.72);
+  background: rgba(0,0,0,.82);
+  backdrop-filter: blur(2px);
 }
 .watch-loading-overlay.hidden { display: none; }
+.watch-loading-overlay .animate-spin-slow {
+  width: 30px !important;
+  height: 30px !important;
+  border-width: 2px !important;
+  border-color: rgba(255,255,255,.16) !important;
+  border-top-color: rgba(255,255,255,.78) !important;
+}
+.watch-loading-overlay #playerOverlayText {
+  display: none;
+}
+#playerOverlay.is-error #playerOverlayText {
+  display: block;
+}
 .watch-center-play {
   position: absolute;
   left: 50%;
@@ -2565,16 +2588,24 @@ html.light #bottomNav {
 
 @media (max-width: 767.98px) {
   body.is-watch .watch-controls {
-    padding: 58px 10px calc(env(safe-area-inset-bottom) + 10px);
+    padding: 72px max(10px, env(safe-area-inset-left)) calc(env(safe-area-inset-bottom) + 12px) max(10px, env(safe-area-inset-right));
   }
   body.is-watch .watch-control-row {
-    gap: 4px;
+    gap: 6px;
+    min-height: 44px;
   }
-  body.is-watch .watch-volume,
   body.is-watch .watch-time-inline,
-  body.is-watch #desktopTimeLabel,
-  body.is-watch #pipBtn {
+  body.is-watch #desktopTimeLabel {
     display: none;
+  }
+  body.is-watch .watch-volume {
+    display: inline-flex;
+    gap: 1px;
+  }
+  body.is-watch .watch-volume-range {
+    display: block;
+    width: clamp(44px, 13vw, 64px);
+    height: 4px;
   }
   body.is-watch .watch-icon-btn {
     min-width: 36px;
@@ -2584,6 +2615,7 @@ html.light #bottomNav {
   body.is-watch .watch-text-btn {
     min-width: 42px;
     height: 36px;
+    padding: 0 8px;
   }
   body.is-watch .watch-center-play {
     width: 64px;
@@ -2592,17 +2624,79 @@ html.light #bottomNav {
   body.is-watch #mobileOverlay .overlay-auto-hide:first-child {
     background: linear-gradient(180deg, rgba(0,0,0,.75) 0%, transparent 100%);
   }
-  body.is-watch .player-inner.is-playing:not(:focus-within) .watch-controls {
+  body.is-watch .player-inner.is-playing.controls-hidden .watch-controls {
     opacity: 0;
     pointer-events: none;
     transform: translateY(10px);
   }
   body.is-watch .player-inner.controls-visible .watch-controls,
-  body.is-watch .player-inner.is-paused .watch-controls,
-  body.is-watch .player-inner:hover .watch-controls {
+  body.is-watch .player-inner.is-paused .watch-controls {
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0);
+  }
+  body.is-watch .watch-control-group {
+    gap: 2px;
+  }
+  body.is-watch .watch-control-group:first-child {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    min-width: 0;
+  }
+  body.is-watch .watch-control-group:last-child {
+    flex: 0 0 auto;
+    justify-content: flex-end;
+  }
+  body.is-watch .watch-seek-row {
+    gap: 8px;
+    font-size: 11px;
+  }
+  body.is-watch .watch-seek {
+    height: 5px;
+    touch-action: pan-x;
+  }
+  body.is-watch .watch-seek::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+  }
+  body.is-watch .watch-seek::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+  }
+  body.is-watch #mobileOverlay .mobile-rail-persist {
+    right: max(12px, env(safe-area-inset-right));
+    gap: 12px;
+  }
+  body.is-watch .watch-rail-btn {
+    width: 42px;
+    height: 42px;
+  }
+  body.is-watch .watch-episode-btn {
+    width: 54px;
+    height: 54px;
+  }
+  body.is-watch .watch-speed-menu {
+    right: max(12px, env(safe-area-inset-right));
+    bottom: calc(env(safe-area-inset-bottom) + 64px);
+  }
+}
+
+@media (max-width: 767.98px) and (orientation: landscape) {
+  body.is-watch .watch-controls {
+    padding: 50px calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 10px) calc(env(safe-area-inset-left) + 12px);
+  }
+  body.is-watch #mobileOverlay .overlay-auto-hide:first-child {
+    padding-top: calc(env(safe-area-inset-top) + 8px);
+    padding-left: calc(env(safe-area-inset-left) + 12px);
+    padding-right: calc(env(safe-area-inset-right) + 12px);
+  }
+  body.is-watch #mobileOverlay .mobile-rail-persist {
+    right: calc(env(safe-area-inset-right) + 10px);
+    transform: translateY(-50%) scale(.92);
+  }
+  body.is-watch .watch-center-play {
+    width: 58px;
+    height: 58px;
   }
 }
 
