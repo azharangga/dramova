@@ -463,6 +463,23 @@
     return ready;
   }
 
+  function heroTitleHtml(item) {
+    const title = D.cleanTitle?.(item.title) || item.title || '';
+    return title
+      ? escapeHtml(title)
+      : '<span class="home-hero-info-skeleton home-hero-title-skeleton skeleton"></span>';
+  }
+
+  function heroMetaHtml(html) {
+    return html || '<span class="home-hero-info-skeleton home-hero-meta-skeleton skeleton"></span>';
+  }
+
+  function heroSynopsisHtml(synopsis) {
+    return synopsis
+      ? `<p class="home-hero-synopsis mt-3 line-clamp-2">${escapeHtml(synopsis)}</p>`
+      : '<div class="home-hero-info-skeleton home-hero-synopsis-skeleton skeleton"></div><div class="home-hero-info-skeleton home-hero-synopsis-skeleton skeleton"></div>';
+  }
+
   function renderHero(items) {
     const renderToken = ++heroRenderToken;
     heroSlides = pickHeroItems(items, 5);
@@ -503,12 +520,12 @@
                 <span style="color:rgba(255,255,255,0.88);">${D.Platforms[platform]?.label || platform}</span>
               </span>
               <h2 class="home-hero-title mt-2.5 text-white">
-                ${D.cleanTitle?.(it.title) || it.title || ''}
+                ${heroTitleHtml(it)}
               </h2>
               <p class="home-hero-meta mt-1.5 flex flex-wrap items-center gap-x-2" style="color: #d7d7d7;">
-                ${metaHtml || `<span>${D.Platforms[platform]?.label || 'Serial'}</span>`}
+                ${heroMetaHtml(metaHtml)}
               </p>
-              ${synopsis ? `<p class="home-hero-synopsis mt-3 line-clamp-2">${synopsis}</p>` : ''}
+              ${heroSynopsisHtml(synopsis)}
               <span data-watch-href="${D.watchUrl(platform, it.id)}" class="hero-cta-watch mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[12px] font-bold sm:mt-4 sm:px-5 sm:py-2.5 sm:text-sm"
                     style="border-radius: 9999px; background: var(--accent-control-bg); color: var(--accent-control-text); border: 1px solid var(--accent-control-border); letter-spacing: 1.4px; text-transform: uppercase; box-shadow: rgba(0,0,0,0.5) 0px 8px 24px; cursor: pointer; position: relative; z-index: 5;">
                 <i data-lucide="play" class="h-3.5 w-3.5 fill-current"></i>${D.t('common.watch_now')}
