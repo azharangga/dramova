@@ -433,7 +433,7 @@
       showWatchError(D.t('player.video_unavailable'));
       return;
     }
-    showWatchLoading(D.t('player.loading'));
+    if (!opts.seamless) showWatchLoading(D.t('player.loading'));
 
     const video = dom.video;
     const isHls = type === 'hls' || /\.m3u8(\?|$)/i.test(url);
@@ -504,7 +504,7 @@
     D.videoOpt?.enhanceAudio?.(video);
 
     // Play strategy: untuk proxy MP4, tunggu buffer dulu
-    const viaProxyStream = finalUrl.includes('/proxy/');
+    const viaProxyStream = false;
     if (viaProxyStream) {
       // Via proxy — tunggu canplay supaya tidak buffering terus
       const tryPlay = () => tryAutoplay();
@@ -521,7 +521,7 @@
       // Kalau pakai HTTPS direct, fallback cepat (2.5s) karena kalau CDN
       // tidak support HTTPS, akan langsung error/timeout
       const isDirectAttempt = !finalUrl.includes('/proxy/') && !finalUrl.startsWith('/');
-      const fallbackMs = isDirectAttempt ? 2500 : 8000;
+      const fallbackMs = isDirectAttempt ? 900 : 2500;
       state.fallbackTimer = setTimeout(() => {
         if (video.readyState < 2 && !video.error) {
           console.warn('[Dramova] playback timeout, fallback ke proxy');
@@ -938,7 +938,13 @@
   }
 
   function bestStreamQuality(stream) {
-    return stream?.qualities?.[0] || null;
+    const qualities = stream?.qualities || [];
+    if (!qualities.length) return null;
+    const adjusted = D.videoOpt?.getAdjustedQuality?.(qualities);
+    if (adjusted) return adjusted;
+    return qualities
+      .slice()
+      .sort((a, b) => (parseInt(a.quality || a.label, 10) || 9999) - (parseInt(b.quality || b.label, 10) || 9999))[0];
   }
 
   function isHlsUrl(url, type) {
@@ -973,7 +979,7 @@
         state.warmVideo = document.createElement('video');
         state.warmVideo.muted = true;
         state.warmVideo.playsInline = true;
-        state.warmVideo.preload = 'metadata';
+        state.warmVideo.preload = 'auto';
         state.warmVideo.style.display = 'none';
       }
       if (state.warmVideo.src !== finalUrl) {
@@ -1027,7 +1033,7 @@
       if (token !== state.streamToken) return;
       const data = stream.data;
       state.qualities = stream.qualities;
-      state.currentQuality = stream.qualities[0] || null;
+      state.currentQuality = bestStreamQuality(stream);
       state.subtitles = stream.subtitles;
 
       dom.epLabel.textContent = episodeLabel(ep, data.epTitle);

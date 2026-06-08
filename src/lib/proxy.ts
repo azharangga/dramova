@@ -38,6 +38,7 @@ export async function proxyToBackend(
     const response = await fetch(url.toString(), {
       method: request.method,
       headers,
+      cache: options.stream ? "no-store" : "force-cache",
       // No body for GET/HEAD/OPTIONS
     });
 
@@ -73,7 +74,7 @@ export async function proxyToBackend(
     return NextResponse.json(data, {
       status: response.status,
       headers: {
-        "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
+        "Cache-Control": "public, max-age=60, s-maxage=600, stale-while-revalidate=1800",
       },
     });
   } catch (error) {
