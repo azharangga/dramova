@@ -60,7 +60,16 @@
   // ── Optimal HLS.js config based on network ───────────────────
   function getHlsConfig() {
     var quality = getNetworkQuality();
-    var base = { enableWorker: true, lowLatencyMode: true };
+    var base = {
+      enableWorker: true,
+      lowLatencyMode: true,
+      backBufferLength: 60,
+      maxFragLookUpTolerance: 0.25,
+      progressive: true,
+      fragLoadingMaxRetry: 4,
+      manifestLoadingMaxRetry: 3,
+      levelLoadingMaxRetry: 4,
+    };
 
     switch (quality) {
       case 'good':
@@ -105,6 +114,7 @@
       // Page hidden → pause playing videos to save bandwidth/battery
       pausedByVisibility = [];
       for (var i = 0; i < videos.length; i++) {
+        if (videos[i].id === 'video' || videos[i].closest('#watchRoot')) continue;
         if (!videos[i].paused && videos[i].src) {
           videos[i].pause();
           pausedByVisibility.push(videos[i]);
@@ -182,6 +192,46 @@
   }
 
   // ── Export ───────────────────────────────────────────────────
+  var audioGraphs = new WeakMap();
+
+  function enhanceAudio(video) {
+    if (!video || audioGraphs.has(video)) return false;
+    var AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return false;
+    try {
+      var ctx = new AudioCtx();
+      var source = ctx.createMediaElementSource(video);
+      var highpass = ctx.createBiquadFilter();
+      var compressor = ctx.createDynamicsCompressor();
+      var gain = ctx.createGain();
+
+      highpass.type = 'highpass';
+      highpass.frequency.value = 45;
+      highpass.Q.value = 0.7;
+      compressor.threshold.value = -24;
+      compressor.knee.value = 24;
+      compressor.ratio.value = 2.2;
+      compressor.attack.value = 0.004;
+      compressor.release.value = 0.22;
+      gain.gain.value = 1.04;
+
+      source.connect(highpass);
+      highpass.connect(compressor);
+      compressor.connect(gain);
+      gain.connect(ctx.destination);
+
+      function resumeAudio() {
+        if (ctx.state === 'suspended') ctx.resume().catch(function () {});
+      }
+      video.addEventListener('play', resumeAudio);
+      video.addEventListener('click', resumeAudio);
+      audioGraphs.set(video, { ctx: ctx, source: source, highpass: highpass, compressor: compressor, gain: gain });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   D = window.DramSi = window.DramSi || {};
   Object.assign(D, {
     videoOpt: {
@@ -191,6 +241,7 @@
       getHlsConfig: getHlsConfig,
       getAdjustedQuality: getAdjustedQuality,
       getPreloadStrategy: getPreloadStrategy,
+      enhanceAudio: enhanceAudio,
       isDataSaverOn: isDataSaverOn,
       checkBattery: checkBattery,
     },

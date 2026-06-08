@@ -43,6 +43,22 @@
     epSheetCloseBtn: document.getElementById('epSheetCloseBtn'),
     epSheetScroller: document.getElementById('epSheetScroller'),
     swipeHint: document.getElementById('swipeHint'),
+    controls: document.getElementById('watchControls'),
+    centerPlayBtn: document.getElementById('centerPlayBtn'),
+    playPauseBtn: document.getElementById('playPauseBtn'),
+    rewindBtn: document.getElementById('rewindBtn'),
+    forwardBtn: document.getElementById('forwardBtn'),
+    muteBtn: document.getElementById('muteBtn'),
+    volumeBar: document.getElementById('volumeBar'),
+    seekBar: document.getElementById('seekBar'),
+    currentTimeLabel: document.getElementById('currentTimeLabel'),
+    durationLabel: document.getElementById('durationLabel'),
+    desktopTimeLabel: document.getElementById('desktopTimeLabel'),
+    speedBtn: document.getElementById('speedBtn'),
+    speedMenu: document.getElementById('speedMenu'),
+    pipBtn: document.getElementById('pipBtn'),
+    fullscreenBtn: document.getElementById('fullscreenBtn'),
+    seekFeedback: document.getElementById('seekFeedback'),
   };
 
   const state = {
@@ -62,8 +78,13 @@
     scrollAnimationTimer: null,
     streamToken: 0,
     isInitialStream: true,
-    playbackRate: Number(localStorage.getItem('dramsi.playbackRate') || '1') || 1,
+    playbackRate: 1,
     pendingResumeTime: 0,
+    seeking: false,
+    feedbackTimer: null,
+    autoPipActive: false,
+    pipRequesting: false,
+    resumeToast: null,
   };
 
   if (!dramaId || !D.Platforms[platform]) {
@@ -152,9 +173,157 @@
 
   function formatTime(seconds) {
     const total = Math.max(0, Math.floor(seconds || 0));
-    const m = Math.floor(total / 60);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
     const s = total % 60;
-    return `${m}:${String(s).padStart(2, '0')}`;
+    return h ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  function setIcon(button, iconName, className = 'h-5 w-5') {
+    if (!button) return;
+    if (button.dataset.icon === iconName) return;
+    button.dataset.icon = iconName;
+    button.innerHTML = `<i data-lucide="${iconName}" class="${className}"></i>`;
+    window.refreshIcons?.();
+  }
+
+  function updateTimeControls() {
+    const video = dom.video;
+    if (!video) return;
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    const current = Number.isFinite(video.currentTime) ? video.currentTime : 0;
+    if (!state.seeking && dom.seekBar) {
+      dom.seekBar.value = duration ? String(Math.round((current / duration) * 1000)) : '0';
+      dom.seekBar.style.setProperty('--progress', `${duration ? (current / duration) * 100 : 0}%`);
+    }
+    if (dom.currentTimeLabel) dom.currentTimeLabel.textContent = formatTime(current);
+    if (dom.durationLabel) dom.durationLabel.textContent = formatTime(duration);
+    if (dom.desktopTimeLabel) dom.desktopTimeLabel.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+  }
+
+  function updatePlayerControls() {
+    const video = dom.video;
+    if (!video) return;
+    updateTimeControls();
+    setIcon(dom.playPauseBtn, video.paused ? 'play' : 'pause');
+    setIcon(dom.centerPlayBtn, video.paused ? 'play' : 'pause', 'h-9 w-9');
+    setIcon(dom.muteBtn, video.muted || video.volume === 0 ? 'volume-x' : video.volume < 0.5 ? 'volume-1' : 'volume-2');
+    if (dom.volumeBar) {
+      const volumeValue = video.muted ? 0 : video.volume;
+      dom.volumeBar.value = String(volumeValue);
+      dom.volumeBar.style.setProperty('--progress', `${volumeValue * 100}%`);
+    }
+    if (dom.speedBtn) dom.speedBtn.textContent = `${Number(video.playbackRate).toFixed(2).replace(/\.?0+$/, '')}x`;
+    dom.playerInner?.classList.toggle('is-paused', video.paused);
+    dom.playerInner?.classList.toggle('is-playing', !video.paused);
+    updateModeButtons();
+  }
+
+  function togglePlay() {
+    if (!dom.video) return;
+    if (dom.video.paused) tryAutoplay();
+    else dom.video.pause();
+  }
+
+  function seekBy(delta) {
+    if (!dom.video) return;
+    const duration = Number.isFinite(dom.video.duration) ? dom.video.duration : 0;
+    dom.video.currentTime = Math.min(Math.max(0, dom.video.currentTime + delta), duration || Infinity);
+    showSeekFeedback(delta);
+    updateTimeControls();
+  }
+
+  function showSeekFeedback(delta, text) {
+    if (!dom.seekFeedback) return;
+    clearTimeout(state.feedbackTimer);
+    dom.seekFeedback.textContent = text || `${delta > 0 ? '+' : ''}${delta}s`;
+    dom.seekFeedback.classList.remove('is-visible');
+    void dom.seekFeedback.offsetWidth;
+    dom.seekFeedback.classList.add('is-visible');
+    state.feedbackTimer = setTimeout(() => {
+      dom.seekFeedback.classList.remove('is-visible');
+    }, 650);
+  }
+
+  function updateModeButtons() {
+    dom.pipBtn?.classList.toggle('is-active', document.pictureInPictureElement === dom.video);
+    dom.fullscreenBtn?.classList.toggle('is-active', Boolean(document.fullscreenElement));
+    setIcon(dom.fullscreenBtn, document.fullscreenElement ? 'minimize' : 'maximize');
+  }
+
+  async function toggleFullscreen() {
+    const target = dom.playerWrap || dom.playerInner;
+    document.body.classList.add('watch-fullscreen-active');
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if (target?.requestFullscreen) {
+        await target.requestFullscreen();
+      } else if (target?.webkitRequestFullscreen) {
+        target.webkitRequestFullscreen();
+      }
+    } catch (_) {}
+    if (!document.fullscreenElement) document.body.classList.remove('watch-fullscreen-active');
+    updateModeButtons();
+  }
+
+  function tryAutoplay() {
+    const video = dom.video;
+    if (!video || !video.src) return;
+    const playPromise = video.play();
+    if (playPromise?.catch) {
+      playPromise.catch(() => {
+        showOverlayUI();
+        showSeekFeedback(0, 'Tap untuk putar');
+        updatePlayerControls();
+      });
+    }
+  }
+
+  async function enterPip({ automatic = false } = {}) {
+    if (!dom.video || !document.pictureInPictureEnabled || document.pictureInPictureElement || dom.video.readyState < 1 || state.pipRequesting) return;
+    state.pipRequesting = true;
+    if (automatic) state.autoPipActive = true;
+    try {
+      await dom.video.requestPictureInPicture();
+      state.autoPipActive = automatic;
+    } catch (_) {
+      if (automatic) state.autoPipActive = false;
+    }
+    state.pipRequesting = false;
+    updateModeButtons();
+  }
+
+  async function exitPip({ automaticOnly = false } = {}) {
+    if (!document.pictureInPictureElement) return;
+    if (automaticOnly && !state.autoPipActive) return;
+    try {
+      await document.exitPictureInPicture();
+    } catch (_) {}
+    state.autoPipActive = false;
+    state.pipRequesting = false;
+    updateModeButtons();
+  }
+
+  function applyVideoAspect() {
+    const vw = dom.video?.videoWidth || 0;
+    const vh = dom.video?.videoHeight || 0;
+    if (!vw || !vh || !dom.playerInner) return;
+    const ratio = vw / vh;
+    dom.playerInner.style.aspectRatio = `${vw} / ${vh}`;
+    dom.playerInner.classList.toggle('is-portrait-video', ratio < 0.8);
+    dom.playerInner.classList.toggle('is-wide-video', ratio >= 1.4);
+    if (ratio < 0.8) {
+      dom.playerInner.classList.remove('aspect-video');
+      dom.playerInner.classList.add('aspect-vertical', 'max-w-[420px]');
+      document.body.classList.add('is-vertical');
+      document.body.classList.remove('is-horizontal');
+    } else {
+      dom.playerInner.classList.remove('aspect-video', 'aspect-vertical', 'max-w-[420px]');
+      document.body.classList.remove('is-vertical');
+      document.body.classList.add('is-horizontal');
+    }
+    state._aspectApplied = true;
   }
 
   function maybeProxy(rawUrl) {
@@ -253,22 +422,27 @@
       video.src = finalUrl;
     }
     video.preload = 'auto';
+    video.autoplay = true;
+    video.defaultPlaybackRate = 1;
     video.playbackRate = state.playbackRate;
+    video.muted = false;
+    if (!video.volume) video.volume = 1;
     video.load();
 
     // Inject subtitle tracks
     injectSubtitles();
+    D.videoOpt?.enhanceAudio?.(video);
 
     // Play strategy: untuk proxy MP4, tunggu buffer dulu
     const viaProxyStream = finalUrl.includes('/proxy/');
     if (viaProxyStream) {
       // Via proxy — tunggu canplay supaya tidak buffering terus
-      const tryPlay = () => video.play().catch(() => {});
+      const tryPlay = () => tryAutoplay();
       video.addEventListener('canplay', tryPlay, { once: true });
       setTimeout(() => { if (video.paused) tryPlay(); }, 4000);
     } else {
       // Direct CDN — langsung play (CDN cepat)
-      video.play().catch(() => {});
+      tryAutoplay();
     }
 
     state.lastSrc = { url, type };
@@ -321,7 +495,7 @@
       if (video.textTracks && video.textTracks.length) {
         for (let i = 0; i < video.textTracks.length; i++) {
           const tt = video.textTracks[i];
-          tt.mode = i === 0 ? 'showing' : 'disabled';
+              tt.mode = i === 0 ? 'showing' : 'disabled';
           // Begitu cue mulai aktif, geser ke posisi yang gak ketabrak controls
           tt.addEventListener('cuechange', () => {
             for (const cue of tt.activeCues || []) {
@@ -794,10 +968,17 @@
       if (state.currentQuality) {
         const saved = readProgress();
         state.pendingResumeTime = saved?.ep === ep ? Number(saved.time || 0) : 0;
+        if (state.pendingResumeTime > 12) {
+          state.resumeToast?.dismiss?.();
+          state.resumeToast = D.toast?.loading?.(`Menyiapkan lanjutan dari ${formatTime(state.pendingResumeTime)}...`, {
+            id: 'watch-resume-loading',
+          });
+          showWatchLoading(`Melanjutkan dari ${formatTime(state.pendingResumeTime)}...`);
+        }
         // Store signed proxy URL for maybeProxy/viaProxy fallback
         state._signedProxyUrl = state.currentQuality._signedProxy || '';
         setSrc(state.currentQuality.url, state.currentQuality.type, { seamless });
-        if (!seamless || state.isInitialStream) hideOverlay();
+        if ((!seamless || state.isInitialStream) && state.pendingResumeTime <= 12) hideOverlay();
         state.isInitialStream = false;
         prefetchAround(ep);
       } else {
@@ -814,11 +995,80 @@
   }
 
   // ── Events ─────────────────────────────────────────────────────
+  dom.playPauseBtn?.addEventListener('click', togglePlay);
+  dom.centerPlayBtn?.addEventListener('click', togglePlay);
+  dom.rewindBtn?.addEventListener('click', () => seekBy(-10));
+  dom.forwardBtn?.addEventListener('click', () => seekBy(10));
+  dom.muteBtn?.addEventListener('click', () => {
+    dom.video.muted = !dom.video.muted;
+    updatePlayerControls();
+  });
+  dom.volumeBar?.addEventListener('input', () => {
+    dom.video.volume = Number(dom.volumeBar.value);
+    dom.video.muted = dom.video.volume === 0;
+    updatePlayerControls();
+  });
+  dom.seekBar?.addEventListener('input', () => {
+    state.seeking = true;
+    const duration = Number.isFinite(dom.video.duration) ? dom.video.duration : 0;
+    const pct = Number(dom.seekBar.value || 0) / 1000;
+    dom.seekBar.style.setProperty('--progress', `${pct * 100}%`);
+    if (dom.currentTimeLabel) dom.currentTimeLabel.textContent = formatTime(duration * pct);
+  });
+  dom.seekBar?.addEventListener('change', () => {
+    const duration = Number.isFinite(dom.video.duration) ? dom.video.duration : 0;
+    if (duration) dom.video.currentTime = duration * (Number(dom.seekBar.value || 0) / 1000);
+    state.seeking = false;
+    updatePlayerControls();
+  });
+  dom.speedBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (dom.speedMenu) dom.speedMenu.hidden = !dom.speedMenu.hidden;
+  });
+  dom.speedMenu?.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-rate]');
+    if (!btn) return;
+    state.playbackRate = Number(btn.dataset.rate) || 1;
+    dom.video.playbackRate = state.playbackRate;
+    dom.speedMenu.hidden = true;
+    showSeekFeedback(0, `${Number(state.playbackRate).toFixed(2).replace(/\.?0+$/, '')}x`);
+    updatePlayerControls();
+  });
+  document.addEventListener('click', (e) => {
+    if (!dom.speedMenu || dom.speedMenu.hidden) return;
+    if (!e.target.closest('#speedMenu, #speedBtn')) dom.speedMenu.hidden = true;
+  });
+  dom.pipBtn?.addEventListener('click', async () => {
+    if (document.pictureInPictureElement) await exitPip();
+    else await enterPip();
+    state.autoPipActive = false;
+    updateModeButtons();
+  });
+  dom.fullscreenBtn?.addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', () => {
+    document.body.classList.toggle('watch-fullscreen-active', Boolean(document.fullscreenElement));
+    updateModeButtons();
+  });
+  dom.video.addEventListener('enterpictureinpicture', updateModeButtons);
+  dom.video.addEventListener('leavepictureinpicture', () => {
+    state.autoPipActive = false;
+    updateModeButtons();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && !dom.video.paused && !dom.video.ended) enterPip({ automatic: true });
+    if (!document.hidden) exitPip({ automaticOnly: true });
+  });
+  window.addEventListener('blur', () => {
+    if (!dom.video.paused && !dom.video.ended) enterPip({ automatic: true });
+  });
+  window.addEventListener('focus', () => exitPip({ automaticOnly: true }));
+
   dom.video.addEventListener('loadedmetadata', () => {
     dom.video.playbackRate = state.playbackRate;
     const resumeAt = Number(state.pendingResumeTime || 0);
     const duration = Number.isFinite(dom.video.duration) ? dom.video.duration : 0;
     if (resumeAt > 12 && (!duration || resumeAt < duration - 12)) {
+      showWatchLoading(`Melanjutkan dari ${formatTime(resumeAt)}...`);
       dom.video.currentTime = resumeAt;
       D.toast?.info?.(D.t('player.resume_from', { time: formatTime(resumeAt), ep: state.currentEp }));
     }
@@ -851,10 +1101,14 @@
       }
       state._aspectApplied = true;
     }
+    applyVideoAspect();
+    updatePlayerControls();
   });
   dom.video.addEventListener('loadeddata', () => {
     clearTimeout(state.fallbackTimer);
     hideOverlay();
+    state.resumeToast?.dismiss?.();
+    state.resumeToast = null;
 
     // Fallback: jika loadedmetadata belum punya dimensions (HLS), cek lagi di sini
     const vw = dom.video.videoWidth;
@@ -880,8 +1134,11 @@
       }
       state._aspectApplied = true;
     }
+    applyVideoAspect();
+    updatePlayerControls();
   });
   dom.video.addEventListener('timeupdate', () => {
+    updateTimeControls();
     if (dom.video.paused) return;
     if (!state.lastProgressSave || Date.now() - state.lastProgressSave > 5000) {
       state.lastProgressSave = Date.now();
@@ -889,12 +1146,17 @@
     }
   });
   dom.video.addEventListener('error', () => {
+    state.resumeToast?.dismiss?.();
+    state.resumeToast = null;
     if (state.lastSrc && !state.triedProxy) {
       state.triedProxy = true;
       setSrc(state.lastSrc.url, state.lastSrc.type, { forceProxy: true });
     } else {
       showWatchError(D.t('player.video_play_error'));
     }
+  });
+  ['play', 'pause', 'volumechange', 'ratechange', 'durationchange', 'progress', 'seeking', 'seeked'].forEach((eventName) => {
+    dom.video.addEventListener(eventName, updatePlayerControls);
   });
   dom.video.addEventListener('ended', autoNext);
   window.addEventListener('beforeunload', writeProgress);
@@ -1107,8 +1369,9 @@
   const IDLE_MS = 2500;
 
   function setOverlayVisible(visible) {
-    if (!mobileOverlay) return;
-    mobileOverlay.classList.toggle('is-hidden', !visible);
+    mobileOverlay?.classList.toggle('is-hidden', !visible);
+    dom.playerInner?.classList.toggle('controls-visible', visible);
+    dom.playerInner?.classList.toggle('controls-hidden', !visible);
   }
   function showOverlayUI() {
     setOverlayVisible(true);
@@ -1123,16 +1386,19 @@
   // Tap pada player → toggle overlay (kalau lagi tersembunyi → munculkan)
   if (dom.playerInner) {
     dom.playerInner.addEventListener('click', (e) => {
-      // Abaikan klik yang berasal dari kontrol overlay sendiri (tombol/anchor)
-      if (e.target.closest('button, a')) return;
-      // Abaikan klik di video controls bawaan (area bawah)
-      const isHidden = mobileOverlay?.classList.contains('is-hidden');
+      if (e.target.closest('button, a, input')) {
+        showOverlayUI();
+        return;
+      }
+      const isHidden = dom.playerInner.classList.contains('controls-hidden');
       if (isHidden) {
         showOverlayUI();
       } else {
-        // sembunyikan langsung kalau lagi play, biar feel-nya snappy
         if (!dom.video.paused) setOverlayVisible(false);
       }
+    });
+    ['mousemove', 'pointermove'].forEach((evt) => {
+      dom.playerInner.addEventListener(evt, () => showOverlayUI(), { passive: true });
     });
   }
 
@@ -1150,10 +1416,14 @@
       if (mobileOverlay.classList.contains('is-hidden')) return;
       scheduleHide();
     }, { passive: true });
+    dom.controls?.addEventListener(evt, () => showOverlayUI(), { passive: true });
   });
 
   // Sembunyikan hint setelah beberapa detik atau saat user pertama kali tap player
   setTimeout(hideSwipeHint, 4500);
+  setTimeout(() => {
+    if (!dom.video.paused && !dom.video.ended) setOverlayVisible(false);
+  }, 2400);
   dom.playerInner?.addEventListener('click', () => {
     setTimeout(hideSwipeHint, 1200);
   }, { once: true });
@@ -1161,7 +1431,26 @@
   // Keyboard shortcuts on watch page
   document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    if (e.key === 'ArrowRight' && (e.shiftKey || e.altKey)) {
+    if (e.code === 'Space' || e.key === 'k' || e.key === 'K') {
+      e.preventDefault();
+      togglePlay();
+    } else if (e.key === 'ArrowRight' && !(e.shiftKey || e.altKey)) {
+      e.preventDefault();
+      seekBy(10);
+    } else if (e.key === 'ArrowLeft' && !(e.shiftKey || e.altKey)) {
+      e.preventDefault();
+      seekBy(-10);
+    } else if (e.key === 'm' || e.key === 'M') {
+      e.preventDefault();
+      dom.video.muted = !dom.video.muted;
+      updatePlayerControls();
+    } else if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      toggleFullscreen();
+    } else if (e.key === 'p' || e.key === 'P') {
+      e.preventDefault();
+      dom.pipBtn?.click();
+    } else if (e.key === 'ArrowRight' && (e.shiftKey || e.altKey)) {
       e.preventDefault();
       if (state.currentEp < state.episodes.length) gotoEp(state.currentEp + 1);
     } else if (e.key === 'ArrowLeft' && (e.shiftKey || e.altKey)) {

@@ -20,10 +20,10 @@
   // ── Icon circles (filled background, white icon) ───────────────
   const ICON_BG = {
     success: '#2BA641',
-    error:   '#f3727f',
-    warning: '#ffa42b',
-    info:    '#2BA641',
-    loading: '#4d4d4d',
+    error:   '#ef4444',
+    warning: '#f59e0b',
+    info:    '#3b82f6',
+    loading: '#64748b',
   };
 
   const ICONS_SVG = {
@@ -60,7 +60,7 @@
       shadow: 'rgba(0,0,0,0.12) 0px 8px 32px',
       close:  '#aaaaaa',
       closeHover: '#333333',
-      actionColor: (type) => ICON_BG[type] || ICON_BG.info,
+        actionColor: (type) => ICON_BG[type] || ICON_BG.info,
     };
   }
 
@@ -93,9 +93,9 @@
       align-items: center;
       gap: 12px;
       padding: 12px 16px;
-      border-radius: 100px;
+      border-radius: 14px;
       background: ${colors.bg};
-      border: 1px solid ${colors.border};
+      border: 1px solid ${ICON_BG[type] || ICON_BG.info}33;
       box-shadow: ${colors.shadow};
       max-width: ${isMobile ? 'calc(100vw - 32px)' : '360px'};
       min-width: ${isMobile ? '200px' : '240px'};
