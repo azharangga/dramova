@@ -2166,12 +2166,18 @@ html.light #bottomNav {
 .auth-strength { display: grid; gap: 9px; margin-top: -4px; }
 .auth-strength-bars { display: flex; align-items: center; gap: 4px; }
 .auth-strength-bars span { height: 6px; flex: 1; border-radius: 999px; background: var(--border-color); }
-.auth-strength-bars span.is-on { background: var(--accent); }
+.auth-strength-bars.score-1 span.is-on { background: #ef4444; }
+.auth-strength-bars.score-2 span.is-on { background: #f59e0b; }
+.auth-strength-bars.score-3 span.is-on { background: #eab308; }
+.auth-strength-bars.score-4 span.is-on { background: #3b82f6; }
+.auth-strength-bars.score-5 span.is-on { background: #16a34a; }
 .auth-strength-bars b { min-width: 74px; color: var(--text-secondary); font-size: 11px; text-align: right; }
 .auth-strength ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 12px; color: var(--text-secondary); font-size: 11px; }
 .auth-strength li { display: flex; align-items: center; gap: 5px; }
-.auth-strength li.is-ok,.auth-inline-ok { color: var(--accent); }
-.auth-inline-error { color: var(--negative); font-size: 12px; }
+.auth-strength li.is-ok { color: var(--accent); }
+.auth-inline-status { display: inline-flex; width: max-content; max-width: 100%; align-items: center; gap: 5px; margin-top: -6px; color: var(--text-secondary); font-size: 11px; font-weight: 750; line-height: 1.3; }
+.auth-inline-status.is-ok { color: var(--accent); }
+.auth-inline-status.is-error,.auth-inline-error { color: var(--negative); font-size: 11px; }
 .profile-page { min-height: 100vh; }
 .profile-page .page-header {
   margin-bottom: 28px;

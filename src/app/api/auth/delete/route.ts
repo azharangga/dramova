@@ -7,7 +7,7 @@ export async function DELETE(request: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user?.id || !user.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user?.id || !user.email) return NextResponse.json({ error: "Sesi habis. Silakan login ulang." }, { status: 401 });
 
   const { password } = await request.json().catch(() => ({ password: "" }));
   if (!password) return NextResponse.json({ error: "Password wajib diisi" }, { status: 400 });
@@ -21,7 +21,7 @@ export async function DELETE(request: Request) {
   const admin = createAdminClient();
   await admin.storage.from("avatars").remove((await admin.storage.from("avatars").list(user.id)).data?.map((f) => `${user.id}/${f.name}`) || []);
   const { error } = await admin.auth.admin.deleteUser(user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Akun belum bisa dihapus. Coba lagi nanti." }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }

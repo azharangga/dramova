@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { sanitizeBackendResponse } from "@/lib/sanitize-backend-response";
 
 const BACKEND_URL = process.env.API_BASE_URL || "http://localhost:7860";
 
@@ -69,7 +70,7 @@ export async function proxyToBackend(
     }
 
     // For JSON API responses
-    const data = await response.json();
+    const data = sanitizeBackendResponse(await response.json(), request.headers.get("user-agent") || "");
 
     return NextResponse.json(data, {
       status: response.status,

@@ -399,29 +399,12 @@
     if (!rawUrl) return rawUrl;
     // If URL is already a proxy/internal path, use as-is
     if (String(rawUrl).startsWith('/')) return rawUrl;
-    try {
-      const u = new URL(rawUrl, window.location.href);
-      const pageHttps = window.location.protocol === 'https:';
-      if (pageHttps && u.protocol === 'http:') {
-        // Need proxy for mixed-content — use signed URL from state if available
-        const signed = state._signedProxyUrl;
-        if (signed) return signed;
-        // Fallback: try raw URL anyway (some CDNs redirect HTTP→HTTPS)
-        return rawUrl;
-      }
-      return rawUrl;
-    } catch (_) {
-      return rawUrl;
-    }
+    return '';
   }
   function viaProxy(rawUrl) {
     if (!rawUrl) return rawUrl;
     if (String(rawUrl).startsWith('/')) return rawUrl;
-    // Use signed proxy URL from state if available
-    const signed = state._signedProxyUrl;
-    if (signed) return signed;
-    // Fallback: use raw URL directly
-    return rawUrl;
+    return '';
   }
 
   function setSrc(url, type, opts = {}) {
@@ -450,21 +433,7 @@
       // HLS: pakai URL yang sudah di-set (bisa proxy playlist atau direct)
       finalUrl = url.startsWith('/') ? url : maybeProxy(url);
     } else {
-      // MP4: coba HTTPS direct dulu (skip proxy = no buffering)
-      const httpsUrl = quality.httpsUrl || '';
-      const directUrl = quality.directUrl || quality.rawUrl || '';
-      const pageHttps = window.location.protocol === 'https:';
-
-      if (pageHttps && httpsUrl) {
-        // Coba HTTPS version dari CDN (banyak CDN support meski URL asli HTTP)
-        finalUrl = httpsUrl;
-      } else if (!pageHttps && directUrl) {
-        // Halaman HTTP → bisa langsung akses CDN HTTP
-        finalUrl = directUrl;
-      } else {
-        // Fallback: langsung pakai proxy (signed)
-        finalUrl = quality._signedProxy || quality.proxiedUrl || viaProxy(url);
-      }
+      finalUrl = url.startsWith('/') ? url : viaProxy(url);
     }
 
     // Bersihkan track lama
@@ -908,22 +877,20 @@
 
   function normalizeStreamData(raw) {
     const data = D.unwrap(raw) || {};
-    const url = data.videoUrl || data.url;
-    const signedVideoUrl = data.proxiedVideoUrl || '';
-    const ql = (data.qualityList || (url ? [{ label: 'auto', url, type: 'hls' }] : []))
-      .map((quality) => {
-        const rawQualityUrl = quality.rawUrl || quality.url || url;
+      const url = data.videoUrl || data.url;
+      const signedVideoUrl = '';
+      const ql = (data.qualityList || (url ? [{ label: 'auto', url, type: 'hls' }] : []))
+        .map((quality) => {
+        const rawQualityUrl = quality.url || url;
         const type = quality.type || (isHlsUrl(rawQualityUrl) ? 'hls' : 'mp4');
         const proxiedUrl = quality.proxiedUrl || signedVideoUrl || '';
         const finalUrl = proxiedUrl || rawQualityUrl;
         return {
-          ...quality,
+          label: quality.label,
+          quality: quality.quality,
           type,
           url: finalUrl,
-          rawUrl: rawQualityUrl,
           _signedProxy: proxiedUrl,
-          httpsUrl: quality.httpsUrl || data.httpsUrl || '',
-          directUrl: quality.directUrl || data.directUrl || rawQualityUrl,
         };
       });
     return { data, qualities: ql, subtitles: data.subtitles || [] };

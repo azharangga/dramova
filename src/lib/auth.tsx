@@ -1,16 +1,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { User } from "@supabase/supabase-js";
+import { mapAuthUser, type AuthUser } from "@/lib/auth-user";
 import { createClient } from "@/lib/supabase/client";
 import { trackActivity } from "@/lib/activity";
-
-export type AuthUser = {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string | null;
-};
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -24,16 +17,6 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function mapUser(user: User | null): AuthUser | null {
-  if (!user) return null;
-  return {
-    id: user.id,
-    name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Pengguna",
-    email: user.email || "",
-    avatarUrl: user.user_metadata?.avatar_url || null,
-  };
-}
-
 async function verifyTurnstile(token: string) {
   const res = await fetch("/api/auth/turnstile", {
     method: "POST",
@@ -46,10 +29,22 @@ async function verifyTurnstile(token: string) {
 }
 
 function authError(message: string) {
+  if (message === "Unauthorized") return "Sesi belum aktif. Silakan coba masuk lagi.";
   if (message === "Invalid login credentials") return "Email atau password salah";
   if (message === "User already registered") return "Email sudah terdaftar. Silakan login.";
   if (message === "Email not confirmed") return "Email belum aktif. Nonaktifkan email confirmation di Supabase Auth settings.";
   return message;
+}
+
+async function postAuth<T extends object>(url: string, body: Record<string, unknown>): Promise<T | { error: string }> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = (await res.json().catch(() => ({}))) as T & { error?: string };
+  if (!res.ok) return { error: data.error || "Terjadi kesalahan" };
+  return data;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -58,19 +53,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
 
   const refreshUser = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    setUser(mapUser(user));
+    const res = await fetch("/api/auth/session", {
+      headers: { accept: "application/json" },
+      cache: "no-store",
+    });
+    const data = (await res.json().catch(() => ({}))) as { user?: AuthUser | null };
+    setUser(data.user ?? null);
     setIsLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     refreshUser();
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(mapUser(session?.user ?? null));
+      setUser(mapAuthUser(session?.user ?? null));
       setIsLoading(false);
     });
     return () => subscription.unsubscribe();
@@ -81,9 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const ok = await verifyTurnstile(turnstileToken);
       if (!ok) return { error: "Verifikasi keamanan gagal. Muat ulang challenge dan coba lagi." };
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return { error: authError(error.message) };
-      await refreshUser();
+      const result = await postAuth<{ user?: AuthUser | null }>("/api/auth/login", { email, password });
+      if ("error" in result) return { error: authError(result.error) };
+      setUser(result.user ?? null);
+      setIsLoading(false);
       await trackActivity({ type: "login", metadata: { email } });
       return {};
     },
@@ -95,23 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const ok = await verifyTurnstile(turnstileToken);
       if (!ok) return { error: "Verifikasi keamanan gagal. Muat ulang challenge dan coba lagi." };
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { name } },
-      });
-      if (error) return { error: authError(error.message) };
+      const result = await postAuth<{ user?: AuthUser | null }>("/api/auth/register", { name, email, password });
+      if ("error" in result) return { error: authError(result.error) };
 
-      if (data.user) {
-        await supabase.from("profiles").upsert({
-          id: data.user.id,
-          name,
-          email,
-          avatar_url: null,
-          updated_at: new Date().toISOString(),
-        });
-      }
-      await refreshUser();
+      setUser(result.user ?? null);
+      setIsLoading(false);
       await trackActivity({ type: "register", metadata: { email } });
       return {};
     },

@@ -51,6 +51,7 @@ export function ProfilePage() {
     { id: "sym", label: "Simbol", ok: /[^A-Za-z0-9]/.test(newPassword) },
   ], [newPassword]);
   const score = checks.filter((c) => c.ok).length;
+  const strengthClass = `score-${score}`;
 
   async function saveProfile(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -68,18 +69,15 @@ export function ProfilePage() {
 
     setSavingProfile(true);
     const id = toast.loading("Menyimpan profil...");
-    const metadata = { name: cleanName, avatar_url: user.avatarUrl };
-    const { error: metaError } = await supabase.auth.updateUser({ email: cleanEmail, data: metadata });
-    await supabase.from("profiles").upsert({
-      id: user.id,
-      name: cleanName,
-      email: cleanEmail,
-      avatar_url: user.avatarUrl,
-      updated_at: new Date().toISOString(),
+    const res = await fetch("/api/auth/profile", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: cleanName, email: cleanEmail, avatarUrl: user.avatarUrl }),
     });
+    const data = await res.json().catch(() => ({}));
     setSavingProfile(false);
-    if (metaError) {
-      toast.error("Gagal menyimpan profil", { id, description: metaError.message });
+    if (!res.ok) {
+      toast.error("Gagal menyimpan profil", { id, description: data.error });
       return;
     }
     await refreshUser();
@@ -108,9 +106,13 @@ export function ProfilePage() {
       if (uploadError) throw uploadError;
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
       const avatarUrl = `${data.publicUrl}?t=${Date.now()}`;
-      const { error } = await supabase.auth.updateUser({ data: { name: user.name, avatar_url: avatarUrl } });
-      if (error) throw error;
-      await supabase.from("profiles").update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() }).eq("id", user.id);
+      const res = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: user.name, email: user.email, avatarUrl }),
+      });
+      const profileData = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(profileData.error || "Gagal menyimpan foto profil");
       await refreshUser();
       await trackActivity({ type: "avatar_updated" });
       toast.success("Foto profil diperbarui", { id });
@@ -130,16 +132,15 @@ export function ProfilePage() {
 
     setSavingPassword(true);
     const id = toast.loading("Mengubah password...");
-    const { error: verifyError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
-    if (verifyError) {
-      setSavingPassword(false);
-      toast.error("Password lama salah", { id });
-      return;
-    }
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const res = await fetch("/api/auth/password", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    const data = await res.json().catch(() => ({}));
     setSavingPassword(false);
-    if (error) {
-      toast.error("Gagal mengubah password", { id, description: error.message });
+    if (!res.ok) {
+      toast.error("Gagal mengubah password", { id, description: data.error });
       return;
     }
     await trackActivity({ type: "password_changed" });
@@ -232,8 +233,9 @@ export function ProfilePage() {
           <form onSubmit={changePassword} className="profile-form">
             <label><span>Password lama</span><div className="auth-field"><Lock size={16} /><input placeholder="Masukkan password lama" type={showCurrent ? "text" : "password"} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} /><button type="button" onClick={() => setShowCurrent((v) => !v)}>{showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></label>
             <label><span>Password baru</span><div className="auth-field"><Lock size={16} /><input placeholder="Buat password baru" type={showNew ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /><button type="button" onClick={() => setShowNew((v) => !v)}>{showNew ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></label>
-            <div className="auth-strength"><div className="auth-strength-bars">{[0,1,2,3,4].map((i) => <span key={i} className={i < score ? "is-on" : ""} />)}</div><ul>{checks.map((c) => <li key={c.id} className={c.ok ? "is-ok" : ""}>{c.ok ? <Check size={12} /> : <X size={12} />}{c.label}</li>)}</ul></div>
+            <div className="auth-strength"><div className={`auth-strength-bars ${strengthClass}`}>{[0,1,2,3,4].map((i) => <span key={i} className={i < score ? "is-on" : ""} />)}</div><ul>{checks.map((c) => <li key={c.id} className={c.ok ? "is-ok" : ""}>{c.ok ? <Check size={12} /> : <X size={12} />}{c.label}</li>)}</ul></div>
             <label><span>Konfirmasi password baru</span><div className="auth-field"><Lock size={16} /><input placeholder="Ulangi password baru" type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /><button type="button" onClick={() => setShowConfirm((v) => !v)}>{showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></label>
+            {confirmPassword && <p className={`auth-inline-status ${newPassword === confirmPassword ? "is-ok" : "is-error"}`}>{newPassword === confirmPassword ? <Check size={12} /> : <X size={12} />}{newPassword === confirmPassword ? "Password cocok" : "Password tidak cocok"}</p>}
             <button className="profile-warning-btn" disabled={savingPassword}>{savingPassword ? <Loader2 className="animate-spin" size={16} /> : <Shield size={16} />}Ubah Password</button>
           </form>
         </section>

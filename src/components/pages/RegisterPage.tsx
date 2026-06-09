@@ -39,6 +39,7 @@ export function RegisterPage() {
     { id: "sym", label: "Simbol (!@#$..)", ok: /[^A-Za-z0-9]/.test(password) },
   ], [password]);
   const score = checks.filter((c) => c.ok).length;
+  const strengthClass = `score-${score}`;
   const strength = password.length === 0 ? "—" : score <= 1 ? "Lemah" : score <= 2 ? "Cukup" : score <= 3 ? "Baik" : score === 4 ? "Kuat" : "Sangat Kuat";
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -107,11 +108,11 @@ export function RegisterPage() {
               <label><span>Email</span><div className="auth-field"><Mail size={16} /><input type="email" autoComplete="email" placeholder="kamu@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} /></div></label>
               <label><span>Password</span><div className="auth-field"><Lock size={16} /><input type={showPassword ? "text" : "password"} autoComplete="new-password" placeholder="Buat password yang kuat" value={password} onChange={(e) => setPassword(e.target.value)} /><button type="button" onClick={() => setShowPassword((v) => !v)}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></label>
               <div className="auth-strength">
-                <div className="auth-strength-bars">{[0, 1, 2, 3, 4].map((i) => <span key={i} className={i < score ? "is-on" : ""} />)}<b>{strength}</b></div>
+                <div className={`auth-strength-bars ${strengthClass}`}>{[0, 1, 2, 3, 4].map((i) => <span key={i} className={i < score ? "is-on" : ""} />)}<b>{strength}</b></div>
                 <ul>{checks.map((c) => <li key={c.id} className={c.ok ? "is-ok" : ""}>{c.ok ? <Check size={12} /> : <X size={12} />}{c.label}</li>)}</ul>
               </div>
               <label><span>Konfirmasi password</span><div className="auth-field"><Lock size={16} /><input type={showConfirm ? "text" : "password"} autoComplete="new-password" placeholder="Ulangi password" value={confirm} onChange={(e) => setConfirm(e.target.value)} /><button type="button" onClick={() => setShowConfirm((v) => !v)}>{showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></label>
-              {confirm && <p className={password === confirm ? "adanuth-inline-ok" : "auth-inline-error"}>{password === confirm ? "Password cocok" : "Password tidak cocok"}</p>}
+              {confirm && <p className={`auth-inline-status ${password === confirm ? "is-ok" : "is-error"}`}>{password === confirm ? <Check size={12} /> : <X size={12} />}{password === confirm ? "Password cocok" : "Password tidak cocok"}</p>}
               <label className="auth-check-row">
                 <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} />
                 <span>Saya menyetujui ketentuan layanan dan kebijakan privasi.</span>
