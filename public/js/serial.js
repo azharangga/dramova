@@ -22,8 +22,10 @@
     year: '',
     filterYears: [],
     availableYears: [],
+    hasMore: true,
     heroSeed: Math.random(),
     heroItems: [],
+    visibleForYou: 16,
   };
 
   let platform = 'kdrama';
@@ -385,17 +387,34 @@
 
   function renderGrid(container, items, opts = {}) {
     if (!items.length) {
-      container.innerHTML = emptyMessage(D.t('serial.empty'));
+      if (!opts.append) container.innerHTML = emptyMessage(D.t('serial.empty'));
       return;
     }
-    if (!opts.enriched && items.some((item) => !hasPosterVisual(item))) {
+    if (!opts.enriched && !opts.append && items.some((item) => !hasPosterVisual(item))) {
       container.innerHTML = D.buildSkeletons(Math.min(items.length, 12));
       enrichPosterItems(items).then((nextItems) => {
         renderGrid(container, nextItems, { enriched: true });
       });
       return;
     }
-    container.innerHTML = items.map((it) => D.buildPoster(it, platform)).join('');
+    if (opts.append) {
+      container.querySelectorAll('.poster-skeleton-card').forEach((s) => s.remove());
+      const startIdx = container.children.length;
+      const html = items.map((it) => D.buildPoster(it, platform)).join('');
+      container.insertAdjacentHTML('beforeend', html);
+      const children = container.children;
+      for (let i = startIdx; i < children.length; i++) {
+        children[i].style.opacity = '0';
+        children[i].style.transform = 'translateY(16px)';
+        children[i].style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+        setTimeout(() => {
+          children[i].style.opacity = '1';
+          children[i].style.transform = 'translateY(0)';
+        }, (i - startIdx) * 50);
+      }
+    } else {
+      container.innerHTML = items.map((it) => D.buildPoster(it, platform)).join('');
+    }
     window.refreshIcons?.();
   }
 
@@ -474,13 +493,23 @@
 
     renderRail(trendingRail, trending, { ranked: true });
     renderRail(newRail, newRelease.length ? newRelease : sortByNewest(visibleItems).slice(0, 12));
-    renderGrid(forYouGrid, forYou.length ? forYou : stableShuffle(visibleItems));
+    const prevCount = forYouGrid.children.length;
+    const forYouItems = forYou.length
+      ? forYou.slice(0, state.visibleForYou)
+      : stableShuffle(visibleItems).slice(0, state.visibleForYou);
+    
+    if (prevCount > 0 && forYouItems.length > prevCount) {
+      const newItems = forYouItems.slice(prevCount);
+      renderGrid(forYouGrid, newItems, { append: true });
+    } else if (prevCount === 0 || forYouItems.length <= prevCount) {
+      renderGrid(forYouGrid, forYouItems);
+    }
   }
 
   function setLoading() {
     trendingRail.innerHTML = D.buildSkeletons(8);
     newRail.innerHTML = D.buildSkeletons(8);
-    forYouGrid.innerHTML = D.buildSkeletons(12);
+    forYouGrid.innerHTML = D.buildSkeletons(16);
   }
 
   // ── Hero ──────────────────────────────────────────────────────────────────
@@ -672,13 +701,15 @@
       state.page = 1;
       state.items = [];
       state.heroSeed = Math.random();
+      state.hasMore = true;
       heroTrack.innerHTML = D.buildHeroSkeleton ? D.buildHeroSkeleton() : '';
       heroDots.innerHTML = '';
+      state.visibleForYou = 16;
       setLoading();
       D.motion?.showProgress?.();
     } else {
       loadMoreBtn.disabled = true;
-      forYouGrid.insertAdjacentHTML('beforeend', D.buildSkeletons(6));
+      forYouGrid.insertAdjacentHTML('beforeend', D.buildSkeletons(16));
     }
 
     try {
@@ -718,7 +749,8 @@
         crawlFullCatalog(platform, null);
       }
 
-      loadMoreBtn.hidden = Boolean(state.keyword) || data.hasMore === false || items.length < 6;
+      state.hasMore = data.hasMore !== false;
+      loadMoreBtn.hidden = Boolean(state.keyword) || (!state.hasMore && items.length < 6);
       loadMoreBtn.disabled = false;
       D.motion?.hideProgress?.();
       if (reset) {
@@ -769,7 +801,7 @@
     } else {
       trendingRail.innerHTML = D.buildSkeletons(8);
       newRail.innerHTML = `<div class="text-sm text-white/45 px-2"></div>`;
-      forYouGrid.innerHTML = D.buildSkeletons(12);
+      forYouGrid.innerHTML = D.buildSkeletons(16);
     }
 
     // Kalau catalog belum penuh, crawl sambil update UI secara realtime
@@ -784,6 +816,14 @@
   // ──────────────────────────────────────────────────────────────────────────
 
   loadMoreBtn.addEventListener('click', () => {
+    const forYouStart = state.items.length > 24 ? 24 : 0;
+    const hasHiddenLocalItems = state.items.length > forYouStart + state.visibleForYou;
+    state.visibleForYou += 16;
+    if (hasHiddenLocalItems) {
+      renderSections(state.items);
+      loadMoreBtn.hidden = Boolean(state.keyword) || (!state.hasMore && state.items.length <= forYouStart + state.visibleForYou);
+      return;
+    }
     state.page += 1;
     load(false);
   });

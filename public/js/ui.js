@@ -219,13 +219,21 @@
       ? ['banner', 'detailCover', 'cover', 'coverWap', 'image', 'poster', 'thumbnail', 'thumb']
       : ['cover', 'coverWap', 'image', 'detailCover', 'poster', 'thumbnail', 'thumb', 'verticalCover', 'banner'];
     const seen = new Set();
-    return keys
-      .map((key) => upgradeImageUrl(item?.[key], mode))
-      .filter((url) => {
-        if (!url || seen.has(url)) return false;
-        seen.add(url);
-        return true;
-      });
+    const candidates = [];
+    keys.forEach((key) => {
+      const raw = item?.[key];
+      if (!raw) return;
+      const upgraded = upgradeImageUrl(raw, mode);
+      if (upgraded && !seen.has(upgraded)) {
+        seen.add(upgraded);
+        candidates.push(upgraded);
+      }
+      if (raw && !seen.has(raw)) {
+        seen.add(raw);
+        candidates.push(raw);
+      }
+    });
+    return candidates;
   }
 
   function bestImage(item, mode = 'poster') {
@@ -248,13 +256,40 @@
       return;
     }
 
+    const card = img.closest('.poster-card');
+    if (card && card.dataset.id && card.dataset.platform && !img.dataset.triedDetail) {
+      img.dataset.triedDetail = 'true';
+      const D = window.DramSi;
+      const platform = card.dataset.platform;
+      const id = card.dataset.id;
+      if (D.Platforms && D.Platforms[platform] && D.Platforms[platform].detail) {
+        D.Platforms[platform].detail(id).then(res => {
+          const raw = D.unwrap(res) || {};
+          const drama = raw.data || raw || {};
+          const newCandidates = imageCandidates(drama, 'poster');
+          if (newCandidates.length > 0) {
+             img.dataset.fallbacks = encodeURIComponent(JSON.stringify(newCandidates));
+             img.dataset.fallbackIndex = "0";
+             img.src = newCandidates[0];
+          } else {
+             img.onerror = null;
+             img.src = img.dataset.placeholder || D.placeholderImg(img.alt);
+          }
+        }).catch(() => {
+          img.onerror = null;
+          img.src = img.dataset.placeholder || D.placeholderImg(img.alt);
+        });
+        return;
+      }
+    }
+
     img.onerror = null;
     img.src = img.dataset.placeholder || placeholderImg(img.alt);
   }
 
   function buildPoster(item, platform, opts = {}) {
     const fallbackImages = imageCandidates(item, 'poster');
-    const img = fallbackImages[0] || placeholderImg(item.title);
+    const img = fallbackImages[0] || 'fallback-trigger';
     const fallbackData = encodeURIComponent(JSON.stringify(fallbackImages));
     const placeholder = placeholderImg(item.title);
     const eps = episodeCount(item);

@@ -546,12 +546,14 @@ html.light .detail-tag--ongoing {
   margin-bottom: 8px;
 }
 .detail-cast-scroll {
-  display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 14px 10px;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.detail-cast-scroll.is-collapsed {
+  max-height: var(--cast-2rows, 220px);
 }
 .detail-cast-scroll::-webkit-scrollbar { display: none; }
 .detail-cast-item {
@@ -559,9 +561,8 @@ html.light .detail-tag--ongoing {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  width: 56px;
-  flex-shrink: 0;
   text-align: center;
+  min-width: 0;
 }
 .detail-cast-photo {
   width: 48px;
@@ -610,6 +611,36 @@ html.light .detail-tag--ongoing {
 }
 .detail-cast-img:active {
   transform: scale(0.92);
+}
+.cast-show-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.cast-show-more:hover {
+  opacity: 0.8;
+}
+.cast-show-more svg {
+  transition: transform 0.3s ease;
+}
+.cast-show-more.is-expanded svg {
+  transform: rotate(180deg);
+}
+@media (min-width: 768px) {
+  .detail-cast-scroll {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
 }
 
 /* Cast fullscreen modal */

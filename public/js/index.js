@@ -27,7 +27,7 @@
     items: [],
     sectionItems: null,
     hasMore: true,
-    visibleForYou: 6,
+    visibleForYou: 16,
   };
   const detailCache = new Map();
 
@@ -395,13 +395,32 @@
     window.refreshIcons?.();
   }
 
-  function renderGrid(container, items, platform) {
+  function renderGrid(container, items, platform, opts = {}) {
     if (!container) return;
     if (!items || items.length === 0) {
-      container.innerHTML = `<div class="col-span-full empty-state">${D.t('common.no_data')}</div>`;
+      if (!opts.append) container.innerHTML = `<div class="col-span-full empty-state">${D.t('common.no_data')}</div>`;
       return;
     }
-    container.innerHTML = items.map((it) => D.buildPoster(it, it.__platform || platform)).join('');
+    if (opts.append) {
+      // Remove any existing skeletons
+      container.querySelectorAll('.poster-skeleton-card').forEach((s) => s.remove());
+      const startIdx = container.children.length;
+      const html = items.map((it) => D.buildPoster(it, it.__platform || platform)).join('');
+      container.insertAdjacentHTML('beforeend', html);
+      // Animate new items
+      const children = container.children;
+      for (let i = startIdx; i < children.length; i++) {
+        children[i].style.opacity = '0';
+        children[i].style.transform = 'translateY(16px)';
+        children[i].style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+        setTimeout(() => {
+          children[i].style.opacity = '1';
+          children[i].style.transform = 'translateY(0)';
+        }, (i - startIdx) * 50);
+      }
+    } else {
+      container.innerHTML = items.map((it) => D.buildPoster(it, it.__platform || platform)).join('');
+    }
     window.refreshIcons?.();
   }
 
@@ -487,19 +506,19 @@
     renderRail(trendingRail, sections.trending.slice(0, 12), platform, { ranked: true });
     renderRail(newReleaseRail, sections.newRelease.slice(0, 12), platform);
 
+    const prevCount = forYouGrid.children.length;
     const forYouItems = sections.forYou.length
       ? sections.forYou.slice(0, state.visibleForYou)
       : stableShuffle(items).slice(0, state.visibleForYou);
-    renderGrid(forYouGrid, forYouItems, platform);
-
-    // Fallback jika item terlalu sedikit untuk new release
-    if (!state.sectionItems && sections.newRelease.length === 0) {
-      renderRail(newReleaseRail, sortByNewest(items).slice(0, 12), platform);
+    
+    if (prevCount > 0 && forYouItems.length > prevCount) {
+      // Append only the new items
+      const newItems = forYouItems.slice(prevCount);
+      renderGrid(forYouGrid, newItems, platform, { append: true });
+    } else {
+      renderGrid(forYouGrid, forYouItems, platform);
+      D.motion?.staggerGrid?.(forYouGrid, 0.2);
     }
-
-    D.motion?.staggerGrid?.(trendingRail, 0.1);
-    D.motion?.staggerGrid?.(newReleaseRail, 0.15);
-    D.motion?.staggerGrid?.(forYouGrid, 0.2);
   }
 
   function normalizeItems(data) {
@@ -613,7 +632,7 @@
       state.items = [];
       state.sectionItems = null;
       state.hasMore = true;
-      state.visibleForYou = 6;
+      state.visibleForYou = 16;
       if (loadMoreBtn) {
         loadMoreBtn.hidden = true;
         loadMoreBtn.disabled = true;
@@ -622,10 +641,10 @@
       heroDots.innerHTML = '';
       setRailLoading(trendingRail, 8);
       setRailLoading(newReleaseRail, 8);
-      forYouGrid.innerHTML = D.buildSkeletons(12);
+      forYouGrid.innerHTML = D.buildSkeletons(16);
     } else if (loadMoreBtn) {
       loadMoreBtn.disabled = true;
-      forYouGrid.insertAdjacentHTML('beforeend', D.buildSkeletons(6));
+      forYouGrid.insertAdjacentHTML('beforeend', D.buildSkeletons(16));
     }
 
     try {
@@ -674,7 +693,7 @@
     loadMoreBtn.addEventListener('click', () => {
       const forYouStart = state.items.length > 24 ? 24 : 0;
       const hasHiddenLocalItems = state.items.length > forYouStart + state.visibleForYou;
-      state.visibleForYou += 6;
+      state.visibleForYou += 16;
       if (hasHiddenLocalItems) {
         renderHomeSections(state.items, state.platform);
         updateLoadMore();

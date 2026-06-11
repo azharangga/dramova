@@ -58,7 +58,7 @@ export function MediaGridSection({
         subtitle={subtitle}
         subtitleI18n={subtitleI18n}
       />
-      <PosterSkeletonList id={gridId} kind="grid" count={12} />
+      <PosterSkeletonList id={gridId} kind="grid" count={16} />
       <div className="mt-8 flex justify-center">
         <Button
           id="loadMoreBtn"

@@ -206,7 +206,7 @@
       if (castContainer && castList.length) {
         castContainer.innerHTML = `
           <h3 class="detail-cast-title">${D.t('detail.cast') || 'Pemeran'}</h3>
-          <div class="detail-cast-scroll">
+          <div class="detail-cast-scroll is-collapsed">
             ${castList.map((c, i) => {
               const initial = (c.name || '?')[0].toUpperCase();
               const photoHtml = c.photo
@@ -222,6 +222,48 @@
           </div>
         `;
         castContainer.hidden = false;
+
+        // Measure 2 rows and add show-more button
+        const scrollEl = castContainer.querySelector('.detail-cast-scroll');
+        requestAnimationFrame(() => {
+          const items = scrollEl.querySelectorAll('.detail-cast-item');
+          if (items.length > 0) {
+            const firstTop = items[0].getBoundingClientRect().top;
+            let secondRowEnd = 0;
+            let rowCount = 0;
+            let prevTop = firstTop;
+            for (const item of items) {
+              const t = item.getBoundingClientRect().top;
+              if (t > prevTop + 2) { rowCount++; prevTop = t; }
+              if (rowCount >= 2) break;
+              secondRowEnd = item.getBoundingClientRect().bottom - scrollEl.getBoundingClientRect().top;
+            }
+            const twoRowsH = secondRowEnd + 8;
+            const totalH = scrollEl.scrollHeight;
+            if (totalH > twoRowsH + 10) {
+              scrollEl.style.setProperty('--cast-2rows', twoRowsH + 'px');
+              const btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'cast-show-more';
+              btn.innerHTML = `<span>${D.t('common.read_more') || 'Selengkapnya'}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`;
+              btn.addEventListener('click', () => {
+                const expanded = scrollEl.classList.toggle('is-collapsed');
+                if (!expanded) {
+                  scrollEl.style.maxHeight = totalH + 'px';
+                  btn.classList.add('is-expanded');
+                  btn.querySelector('span').textContent = D.t('common.read_less') || 'Sembunyikan';
+                } else {
+                  scrollEl.style.maxHeight = '';
+                  btn.classList.remove('is-expanded');
+                  btn.querySelector('span').textContent = D.t('common.read_more') || 'Selengkapnya';
+                }
+              });
+              scrollEl.after(btn);
+            } else {
+              scrollEl.classList.remove('is-collapsed');
+            }
+          }
+        });
 
         // Click on cast photo → fullscreen modal
         castContainer.addEventListener('click', (e) => {
