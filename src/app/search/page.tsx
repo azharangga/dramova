@@ -19,6 +19,15 @@ export default function SearchPage() {
       </div>
 
       <div id="searchGrid" className="content-grid mt-7 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"></div>
+      <div className="mt-8 flex justify-center">
+        <button
+          id="loadMoreBtn"
+          hidden
+          className="rounded-full bg-[var(--bg-raised)] px-6 py-2.5 text-[13px] font-bold tracking-[0.5px] text-[var(--text-primary)] shadow-sm transition-transform active:scale-95 disabled:pointer-events-none disabled:opacity-50 hover:bg-[var(--bg-hover)]"
+        >
+          MUAT LEBIH BANYAK
+        </button>
+      </div>
       <PageScript id="page-search" src="/js/search.js" />
     </PageShell>
   );

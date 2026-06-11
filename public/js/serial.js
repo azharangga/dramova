@@ -462,7 +462,7 @@
       trendingHeader.textContent = D.t('serial.trending');
     }
 
-    renderRail(trendingRail, ranked.slice(0, 12), { ranked: true });
+    renderRail(trendingRail, ranked.slice(0, 10), { ranked: true });
     renderRail(newRail, []);
     renderGrid(forYouGrid, ranked.slice(12));
   }
@@ -482,17 +482,17 @@
 
     const visibleItems = filterItems(items);
 
-    const trending = sortByPopularity(visibleItems).slice(0, 12);
+    const trending = sortByPopularity(visibleItems).slice(0, 10);
     const trendingIds = new Set(trending.map((it) => it.id));
 
     const remaining = visibleItems.filter((it) => !trendingIds.has(it.id));
-    const newRelease = sortByNewest(remaining).slice(0, 12);
+    const newRelease = sortByNewest(remaining).slice(0, 10);
     const newReleaseIds = new Set(newRelease.map((it) => it.id));
 
     const forYou = stableShuffle(remaining.filter((it) => !newReleaseIds.has(it.id)));
 
     renderRail(trendingRail, trending, { ranked: true });
-    renderRail(newRail, newRelease.length ? newRelease : sortByNewest(visibleItems).slice(0, 12));
+    renderRail(newRail, newRelease.length ? newRelease : sortByNewest(visibleItems).slice(0, 10));
     const prevCount = forYouGrid.children.length;
     const forYouItems = forYou.length
       ? forYou.slice(0, state.visibleForYou)

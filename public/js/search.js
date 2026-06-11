@@ -8,8 +8,9 @@
   const hint = document.getElementById('searchHint');
   const platformBtn = document.getElementById('searchPlatformBtn');
   const clearBtn = document.getElementById('clearSearchBtn');
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
 
-  const state = { platform: 'all', keyword: '' };
+  const state = { platform: 'all', keyword: '', visibleCount: 24, ranked: [] };
   let debounceId = null;
   let searchToken = 0;
 
@@ -196,9 +197,15 @@
       return;
     }
 
-    grid.innerHTML = ranked.map(({ item, platform }) => D.buildPoster(item, platform)).join('');
+    state.ranked = ranked;
+    const visibleItems = ranked.slice(0, state.visibleCount);
+    
+    grid.innerHTML = visibleItems.map(({ item, platform }) => D.buildPoster(item, platform)).join('');
     window.refreshIcons?.();
     if (isDoneAll) D.motion?.staggerGrid?.(grid);
+    if (loadMoreBtn) {
+      loadMoreBtn.hidden = !isDoneAll || ranked.length <= state.visibleCount;
+    }
   }
   // ──────────────────────────────────────────────────────────────────────────
 
@@ -208,7 +215,9 @@
 
     if (!keyword || keyword.trim().length === 0) {
       state.keyword = '';
+      state.visibleCount = 24;
       grid.innerHTML = '';
+      if (loadMoreBtn) loadMoreBtn.hidden = true;
       // Reset hint ke default
       const hintEl = document.getElementById('searchHint');
       if (hintEl) {
@@ -228,7 +237,9 @@
     }
 
     // Selalu tampilkan skeleton di awal pencarian
+    state.visibleCount = 24;
     grid.innerHTML = D.buildSkeletons(12);
+    if (loadMoreBtn) loadMoreBtn.hidden = true;
     D.motion?.showProgress?.();
 
     // State tracking per platform
@@ -301,6 +312,23 @@
       },
     });
   });
+
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', () => {
+      state.visibleCount += 24;
+      grid.insertAdjacentHTML('beforeend', D.buildSkeletons(6));
+      loadMoreBtn.disabled = true;
+      setTimeout(() => {
+        const visibleItems = state.ranked.slice(0, state.visibleCount);
+        grid.querySelectorAll('.poster-skeleton-card').forEach((s) => s.remove());
+        const startIdx = grid.children.length;
+        const html = visibleItems.slice(startIdx).map(({ item, platform }) => D.buildPoster(item, platform)).join('');
+        grid.insertAdjacentHTML('beforeend', html);
+        loadMoreBtn.disabled = false;
+        loadMoreBtn.hidden = state.ranked.length <= state.visibleCount;
+      }, 50); // slight delay for smooth UI
+    });
+  }
 
   document.addEventListener('lang:changed', () => { if (state.keyword) doSearch(state.keyword); });
 

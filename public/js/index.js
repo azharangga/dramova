@@ -503,8 +503,8 @@
   function renderHomeSections(items, platform) {
     const sections = homeSections(items);
 
-    renderRail(trendingRail, sections.trending.slice(0, 12), platform, { ranked: true });
-    renderRail(newReleaseRail, sections.newRelease.slice(0, 12), platform);
+    renderRail(trendingRail, sections.trending.slice(0, 10), platform, { ranked: true });
+    renderRail(newReleaseRail, sections.newRelease.slice(0, 10), platform);
 
     const prevCount = forYouGrid.children.length;
     const forYouItems = sections.forYou.length

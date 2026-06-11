@@ -10,7 +10,7 @@
 
   const SERIAL_PLATFORMS = (D.SERIAL_PLATFORMS || []).map((p) => p.id);
   const MOVIE_PLATFORMS = (D.MOVIE_PLATFORMS || []).map((p) => p.id);
-  const PAGE_SIZE = 18;
+  const PAGE_SIZE = 24;
 
   const storedFilter = D.Store.get(D.STORAGE.DISCOVER_CAT, 'all') || 'all';
   const state = {
