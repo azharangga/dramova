@@ -49,9 +49,23 @@
       dom.episodeGrid.innerHTML = `<p class="empty-state">${D.t('common.episode_list_empty')}</p>`;
       return;
     }
+    const isOngoing = state.drama?.isOngoing;
+    const currentEpisode = Number(state.drama?.currentEpisode || 0);
+
     dom.episodeGrid.innerHTML = state.episodes.map((ep, i) => {
       const num = ep.episode || ep.number || i + 1;
-      return `<a href="${watchUrl(num)}" class="detail-ep-btn">${num}</a>`;
+      const numVal = Number(num);
+      const isDisabled = isOngoing && currentEpisode > 0 && numVal > currentEpisode;
+
+      const isNew = isOngoing && numVal === currentEpisode;
+
+      if (isDisabled) {
+        return `<a href="javascript:void(0)" onclick="window.DramSi?.toast?.warning?.('Episode Belum Rilis', { description: 'Episode ini belum tersedia.' }); event.preventDefault();" class="detail-ep-btn is-disabled" style="opacity:0.5; cursor:not-allowed;">${num}</a>`;
+      }
+      return `<a href="${watchUrl(num)}" class="detail-ep-btn relative" style="${isNew ? 'border: 1px solid rgba(245,158,11,0.5);' : ''}">
+        ${num}
+        ${isNew ? '<span class="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span></span>' : ''}
+      </a>`;
     }).join('');
   }
 
@@ -84,7 +98,7 @@
       <button class="cast-modal-close" aria-label="Tutup">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-      <img src="${cast.photo}" alt="${cast.name}" referrerpolicy="no-referrer" class="cast-modal-img" />
+      <img src="${cast.photo}" alt="${cast.name}" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(cast.name)}&size=512&background=random'; this.style.objectFit='contain';" referrerpolicy="no-referrer" class="cast-modal-img" />
       <p class="cast-modal-name">${cast.name}</p>
       ${cast.role ? `<p class="cast-modal-role">${cast.role}</p>` : ''}
     `;
@@ -103,7 +117,10 @@
       setTimeout(() => { backdrop.remove(); modal.remove(); }, 250);
     }
     backdrop.addEventListener('click', close);
-    modal.addEventListener('click', close);
+    backdrop.addEventListener('click', close);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) close();
+    });
     modal.querySelector('.cast-modal-close').addEventListener('click', close);
   }
 
@@ -149,9 +166,13 @@
       const epText = state.episodes.length
         ? `${state.episodes.length} ${D.t('common.episodes')}`
         : D.t('common.episodes_unavailable');
+      const isOngoing = drama.isOngoing;
+      const ongoingLabel = isOngoing ? (drama.currentEpisode ? `Ongoing (Episode ${drama.currentEpisode})` : 'Ongoing') : '';
+
       dom.metaRow.innerHTML = `
         <span class="detail-tag">${platformLabel}</span>
         <span class="detail-tag detail-tag--muted">${epText}</span>
+        ${isOngoing ? `<span class="detail-tag detail-tag--ongoing">${ongoingLabel}</span>` : ''}
       `;
 
       // Show actions
@@ -257,6 +278,16 @@
       D.motion?.hideProgress?.();
     } catch (err) {
       const message = err.message || D.friendlyError?.() || D.t('common.detail_load_error');
+      const msgLower = message.toLowerCase();
+      if (msgLower.includes('bukan') || msgLower.includes('tidak dikenal') || msgLower.includes('tidak ditemukan')) {
+        D.toast?.error?.(message);
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.replace('/');
+        }
+        return;
+      }
       if (dom.titleSkeleton) dom.titleSkeleton.style.display = 'none';
       dom.title.textContent = D.t('common.info_unavailable');
       dom.title.style.display = '';

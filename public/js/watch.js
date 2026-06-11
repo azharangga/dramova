@@ -298,6 +298,12 @@
     if (!dom.seekFeedback) return;
     clearTimeout(state.feedbackTimer);
     dom.seekFeedback.textContent = text || `${delta > 0 ? '+' : ''}${delta}s`;
+    
+    // YouTube-like side positioning
+    dom.seekFeedback.classList.remove('is-left', 'is-right');
+    if (delta < 0) dom.seekFeedback.classList.add('is-left');
+    else if (delta > 0) dom.seekFeedback.classList.add('is-right');
+
     dom.seekFeedback.classList.remove('is-visible');
     void dom.seekFeedback.offsetWidth;
     dom.seekFeedback.classList.add('is-visible');
@@ -553,11 +559,27 @@
   function epButtonHTML(ep, i) {
     const num = ep.episode || ep.number || i + 1;
     const isActive = num === state.currentEp;
+    
+    const isOngoing = state.drama?.isOngoing;
+    const currentEpisode = Number(state.drama?.currentEpisode || 0);
+    const numVal = Number(num);
+    
+    const isNew = isOngoing && numVal === currentEpisode;
+    const isDisabled = isOngoing && currentEpisode > 0 && numVal > currentEpisode;
+
+    if (isDisabled) {
+      return `<button data-disabled="true" class="ep-btn relative aspect-square grid place-items-center text-sm font-bold transition"
+        style="border-radius: 8px; opacity:0.5; cursor:not-allowed;">
+        ${num}
+      </button>`;
+    }
+
     return `<button data-ep="${num}"
       class="ep-btn ${isActive ? 'is-active' : ''} relative aspect-square grid place-items-center text-sm font-bold transition active:scale-95"
-      style="border-radius: 8px;"
+      style="border-radius: 8px; ${isNew ? 'border: 1px solid rgba(245,158,11,0.5);' : ''}"
       ${isActive ? 'aria-current="true"' : ''}>
       ${num}
+      ${isNew ? '<span class="absolute -top-1 -right-1 flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span></span>' : ''}
     </button>`;
   }
 
@@ -582,6 +604,10 @@
     if (dom.epSheetSub) dom.epSheetSub.textContent = `Ep ${state.currentEp} · ${lbl}`;
 
     const handler = (btn) => {
+      if (btn.dataset.disabled === "true") {
+        D.toast?.warning?.('Episode Belum Rilis', { description: 'Episode ini belum tersedia.' });
+        return;
+      }
       const ep = parseInt(btn.dataset.ep, 10);
       if (!ep) return;
       closeEpSheet();
@@ -707,7 +733,7 @@
       <button class="cast-modal-close" aria-label="Tutup">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-      <img src="${cast.photo}" alt="${cast.name}" referrerpolicy="no-referrer" class="cast-modal-img" />
+      <img src="${cast.photo}" alt="${cast.name}" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(cast.name)}&size=512&background=random'; this.style.objectFit='contain';" referrerpolicy="no-referrer" class="cast-modal-img" />
       <p class="cast-modal-name">${cast.name}</p>
       ${cast.role ? `<p class="cast-modal-role">${cast.role}</p>` : ''}
     `;
@@ -725,6 +751,10 @@
       setTimeout(() => { backdrop.remove(); modal.remove(); }, 250);
     }
     backdrop.addEventListener('click', close);
+    backdrop.addEventListener('click', close);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) close();
+    });
     modal.querySelector('.cast-modal-close').addEventListener('click', close);
   }
 
@@ -751,7 +781,27 @@
       const title = D.cleanTitle?.(drama.title || drama.bookName) || drama.title || drama.bookName || D.t('common.no_title');
       dom.title.textContent = title;
       dom.title.style.display = '';
-      if (dom.titleMobile) dom.titleMobile.textContent = title;
+      
+      const isOngoing = drama.isOngoing;
+      const ongoingLabel = isOngoing ? (drama.currentEpisode ? `Ongoing (Episode ${drama.currentEpisode})` : 'Ongoing') : '';
+      if (isOngoing) {
+        const badge = document.createElement('span');
+        badge.className = 'inline-block ml-2 px-1.5 py-0.5 text-[10px] font-bold text-white align-middle';
+        badge.style.cssText = 'background: rgba(245,158,11,0.85); backdrop-filter: blur(4px); border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px;';
+        badge.textContent = ongoingLabel;
+        dom.title.appendChild(badge);
+      }
+
+      if (dom.titleMobile) {
+        dom.titleMobile.textContent = title;
+        if (isOngoing) {
+          const badgeM = document.createElement('span');
+          badgeM.className = 'inline-block ml-1.5 px-1.5 py-0.5 text-[9px] font-bold text-white align-middle';
+          badgeM.style.cssText = 'background: rgba(245,158,11,0.85); backdrop-filter: blur(4px); border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 2px;';
+          badgeM.textContent = ongoingLabel;
+          dom.titleMobile.appendChild(badgeM);
+        }
+      }
 
       // Hide skeletons, show real content
       const titleSkel = document.getElementById('watchTitleSkeleton');
@@ -768,7 +818,11 @@
       if (navReal) navReal.style.display = '';
       if (synSkel) synSkel.style.display = 'none';
       if (synReal) synReal.style.display = '';
-      if (shareBtn) { shareBtn.style.opacity = '1'; shareBtn.style.pointerEvents = ''; }
+      if (shareBtn) { 
+        shareBtn.style.opacity = '1'; 
+        shareBtn.style.pointerEvents = ''; 
+        shareBtn.onclick = () => D.openShareSheet?.(drama.title, window.location.href);
+      }
       if (favBtn) { favBtn.style.opacity = '1'; favBtn.style.pointerEvents = ''; }
 
       const synopsis = drama.synopsis || drama.description || '';
@@ -870,8 +924,18 @@
       D.motion?.hideProgress?.();
       setWatchSkeleton(false);
       const message = e.message || D.friendlyError?.() || D.t('player.drama_load_error');
+      const msgLower = message.toLowerCase();
+      if (msgLower.includes('bukan') || msgLower.includes('tidak dikenal') || msgLower.includes('tidak ditemukan')) {
+        D.toast?.error?.('Pemutaran Gagal', { description: message });
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.replace('/');
+        }
+        return;
+      }
       showWatchError(message);
-      D.toast?.error?.(message);
+      D.toast?.error?.('Pemutaran Gagal', { description: message });
     }
   }
 
@@ -1010,12 +1074,14 @@
         dom.epSheetSub.textContent = `Ep ${ep} · ${state.episodes.length} ${D.t('common.episodes')}`;
       }
 
-      if (state.currentQuality) {
+if (state.currentQuality) {
         const saved = readProgress();
         state.pendingResumeTime = saved?.ep === ep ? Number(saved.time || 0) : 0;
         if (state.pendingResumeTime > 12) {
           state.resumeToast?.dismiss?.();
-          state.resumeToast = D.toast?.loading?.(`Menyiapkan lanjutan dari ${formatTime(state.pendingResumeTime)}...`, {
+          state.resumeToast = D.toast?.loading?.('Memuat Lanjutan...', {
+            description: `Menyiapkan dari ${formatTime(state.pendingResumeTime)}...`,
+            duration: 100000,
             id: 'watch-resume-loading',
           });
           showWatchLoading(`Melanjutkan dari ${formatTime(state.pendingResumeTime)}...`);
@@ -1028,14 +1094,14 @@
         prefetchAround(ep);
       } else {
         showWatchError(D.t('player.episode_unavailable'));
-        D.toast?.warning?.(D.t('player.episode_locked'));
+        D.toast?.warning?.('Episode Terkunci', { description: D.t('player.episode_locked') });
       }
     } catch (e) {
       if (token !== state.streamToken) return;
       state.streamCache.delete(ep);
       const message = e.message || D.friendlyError?.() || D.t('player.video_load_error');
       showWatchError(message);
-      D.toast?.error?.(message);
+      D.toast?.error?.('Pemutaran Gagal', { description: message });
     }
   }
 
@@ -1119,7 +1185,7 @@
     if (resumeAt > 12 && (!duration || resumeAt < duration - 12)) {
       showWatchLoading(`Melanjutkan dari ${formatTime(resumeAt)}...`);
       dom.video.currentTime = resumeAt;
-      D.toast?.info?.(D.t('player.resume_from', { time: formatTime(resumeAt), ep: state.currentEp }));
+      D.toast?.info?.('Melanjutkan Putaran', { description: D.t('player.resume_from', { time: formatTime(resumeAt), ep: state.currentEp }) });
     }
     state.pendingResumeTime = 0;
 
@@ -1263,7 +1329,7 @@
     });
     syncFavBtn();
     const title = D.cleanTitle?.(state.drama.title || state.drama.bookName) || state.drama.title || state.drama.bookName || D.t('common.no_title');
-    D.toast?.[added ? 'success' : 'info']?.(D.t(added ? 'common.favorite_added' : 'common.favorite_removed', { title }));
+    D.toast?.[added ? 'success' : 'info']?.(added ? 'Tersimpan ke Favorit' : 'Dihapus dari Favorit', { description: title });
   });
 
   // ── Bottom-sheet daftar episode (mobile) ─────────────────────

@@ -6,7 +6,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Turnstile } from "react-turnstile";
 import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
-import { toast } from "@/components/ui/toast";
+import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { AuthBrandPanel } from "@/components/auth/AuthBrandPanel";
 
@@ -32,29 +32,29 @@ export function LoginPage() {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !/^\S+@\S+\.\S+$/.test(cleanEmail)) {
-      toast.error("Email tidak valid");
+      toast.error("Email Tidak Valid", { description: "Pastikan format email sudah benar." });
       resetTurnstile(setTurnstileToken, setTurnstileKey);
       return;
     }
     if (password.length < 8) {
-      toast.error("Password minimal 8 karakter");
+      toast.error("Password Terlalu Pendek", { description: "Minimal 8 karakter." });
       resetTurnstile(setTurnstileToken, setTurnstileKey);
       return;
     }
     if (!turnstileToken) {
-      toast.error("Selesaikan verifikasi keamanan terlebih dahulu");
+      toast.error("Verifikasi Gagal", { description: "Selesaikan verifikasi keamanan." });
       return;
     }
 
     setLoading(true);
     const { error } = await login(cleanEmail, password, turnstileToken);
     if (error) {
-      toast.error("Gagal masuk", { description: error });
+      toast.error("Login Gagal", { description: error });
       resetTurnstile(setTurnstileToken, setTurnstileKey);
       setLoading(false);
       return;
     }
-    toast.success("Berhasil masuk", { description: "Selamat datang kembali." });
+    toast.success("Berhasil Masuk", { description: "Selamat datang kembali!" });
     router.push(next);
     router.refresh();
   }

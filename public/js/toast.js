@@ -16,7 +16,7 @@
       nonce: Date.now(),
       title: String(title || ''),
       description: options.description,
-      kind: type === 'warning' || type === 'info' ? 'default' : type,
+      kind: type,
       duration: options.duration || (type === 'loading' ? 100000 : 3200),
     };
     window.dispatchEvent(new CustomEvent('dramova:toast', { detail }));

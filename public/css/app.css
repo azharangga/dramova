@@ -360,6 +360,10 @@ img.is-loaded {
     align-items: flex-start;
     gap: 32px;
   }
+  .detail-poster-col {
+    position: sticky;
+    top: calc(72px + env(safe-area-inset-top));
+  }
 }
 @media (min-width: 1024px) {
   .detail-layout {
@@ -458,6 +462,16 @@ img.is-loaded {
   background: var(--bg-raised);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
+}
+.detail-tag--ongoing {
+  background: rgba(255, 179, 71, 0.15);
+  border: 1px solid rgba(255, 179, 71, 0.3);
+  color: var(--warning);
+}
+html.light .detail-tag--ongoing {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #d97706;
 }
 
 /* Title */
@@ -645,8 +659,8 @@ img.is-loaded {
 }
 .cast-modal-close:hover { background: rgba(255,255,255,0.2); }
 .cast-modal-img {
-  max-width: min(280px, 70vw);
-  max-height: 55vh;
+  max-width: min(400px, 85vw);
+  max-height: 70vh;
   border-radius: 12px;
   object-fit: cover;
   box-shadow: 0 12px 40px rgba(0,0,0,0.5);
@@ -1939,7 +1953,7 @@ body.is-offline #topBar::after {
   opacity: 0;
   transition: opacity 0.15s ease;
   box-shadow: var(--shadow-heavy);
-  z-index: 100;
+  z-index: 99999;
 }
 [data-tooltip][data-tooltip-pos="right"]::after {
   bottom: 50%;
@@ -1952,7 +1966,8 @@ body.is-offline #topBar::after {
   right: calc(100% + 8px);
   transform: translateY(50%);
 }
-[data-tooltip][data-tooltip-pos="bottom"]::after {
+[data-tooltip][data-tooltip-pos="bottom"]::after,
+.topbar-shell [data-tooltip]::after {
   bottom: auto;
   top: calc(100% + 8px);
   left: 50%;
@@ -2398,6 +2413,23 @@ html.light #bottomNav {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }
+
+/* YouTube-like side positions */
+.watch-seek-feedback.is-left {
+  left: 15%;
+  transform: translate(0, -50%) scale(.86);
+}
+.watch-seek-feedback.is-left.is-visible {
+  transform: translate(0, -50%) scale(1);
+}
+.watch-seek-feedback.is-right {
+  left: auto;
+  right: 15%;
+  transform: translate(0, -50%) scale(.86);
+}
+.watch-seek-feedback.is-right.is-visible {
+  transform: translate(0, -50%) scale(1);
+}
 .player-inner.is-paused .watch-center-play {
   opacity: 1;
   pointer-events: auto;
@@ -2557,6 +2589,22 @@ html.light #bottomNav {
 .watch-text-btn[data-tooltip]:focus-visible::before {
   transform: translate(-50%, 0) rotate(45deg);
 }
+
+/* Fix cropped tooltips at edges of the video player */
+#playPauseBtn[data-tooltip]::after { left: 0; transform: translate(0, 4px); }
+#playPauseBtn[data-tooltip]:hover::after,
+#playPauseBtn[data-tooltip]:focus-visible::after { transform: translate(0, 0); }
+#playPauseBtn[data-tooltip]::before { left: 16px; transform: translate(-50%, 4px) rotate(45deg); }
+#playPauseBtn[data-tooltip]:hover::before,
+#playPauseBtn[data-tooltip]:focus-visible::before { transform: translate(-50%, 0) rotate(45deg); }
+
+#fullscreenBtn[data-tooltip]::after { left: auto; right: 0; transform: translate(0, 4px); }
+#fullscreenBtn[data-tooltip]:hover::after,
+#fullscreenBtn[data-tooltip]:focus-visible::after { transform: translate(0, 0); }
+#fullscreenBtn[data-tooltip]::before { left: auto; right: 16px; transform: translate(50%, 4px) rotate(45deg); }
+#fullscreenBtn[data-tooltip]:hover::before,
+#fullscreenBtn[data-tooltip]:focus-visible::before { transform: translate(50%, 0) rotate(45deg); }
+
 .watch-icon-btn:active,
 .watch-text-btn:active {
   transform: scale(.94);
@@ -3918,6 +3966,10 @@ html.light body {
   animation: shadcnToastSwipeOut 160ms ease-out forwards;
 }
 
+.shadcn-toast:has(.shadcn-toast__description) {
+  align-items: flex-start;
+}
+
 .shadcn-toast__icon {
   display: grid;
   place-items: center;
@@ -3931,6 +3983,14 @@ html.light body {
 .shadcn-toast--success .shadcn-toast__icon {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   color: var(--accent);
+}
+
+.shadcn-toast--warning {
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--border-color));
+}
+.shadcn-toast--warning .shadcn-toast__icon {
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  color: var(--warning);
 }
 
 .shadcn-toast--error {

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
 import { Camera, Check, Eye, EyeOff, Loader2, Lock, Mail, Save, Shield, Trash2, User, X } from "lucide-react";
-import { toast } from "@/components/ui/toast";
+import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/client";
 import { trackActivity } from "@/lib/activity";
@@ -59,11 +59,11 @@ export function ProfilePage() {
     const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
     if (cleanName.length < 2 || cleanName.length > 60 || !namePattern.test(cleanName)) {
-      toast.error("Nama tidak valid");
+      toast.error("Nama Tidak Valid", { description: "Format nama tidak sesuai." });
       return;
     }
     if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
-      toast.error("Email tidak valid");
+      toast.error("Email Tidak Valid", { description: "Format email tidak sesuai." });
       return;
     }
 
@@ -89,11 +89,11 @@ export function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      toast.error("Format foto harus JPG, PNG, atau WebP");
+      toast.error("Format Tidak Didukung", { description: "Gunakan JPG, PNG, atau WebP." });
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("Ukuran foto maksimal 2MB");
+      toast.error("Ukuran Terlalu Besar", { description: "Maksimal ukuran foto 2MB." });
       return;
     }
     setUploadingAvatar(true);
@@ -115,9 +115,9 @@ export function ProfilePage() {
       if (!res.ok) throw new Error(profileData.error || "Gagal menyimpan foto profil");
       await refreshUser();
       await trackActivity({ type: "avatar_updated" });
-      toast.success("Foto profil diperbarui", { id });
+      toast.success("Foto Diperbarui", { id });
     } catch (error) {
-      toast.error("Gagal upload foto", { id, description: error instanceof Error ? error.message : undefined });
+      toast.error("Gagal Mengunggah", { id, description: error instanceof Error ? error.message : undefined });
     }
     setUploadingAvatar(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -126,9 +126,9 @@ export function ProfilePage() {
   async function changePassword(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!user) return;
-    if (!currentPassword) return toast.error("Password lama wajib diisi");
-    if (score < 5) return toast.error("Password baru belum cukup kuat");
-    if (newPassword !== confirmPassword) return toast.error("Konfirmasi password tidak cocok");
+    if (!currentPassword) return toast.error("Validasi Gagal", { description: "Password lama wajib diisi." });
+    if (score < 5) return toast.error("Validasi Gagal", { description: "Password baru belum cukup kuat." });
+    if (newPassword !== confirmPassword) return toast.error("Validasi Gagal", { description: "Konfirmasi password tidak cocok." });
 
     setSavingPassword(true);
     const id = toast.loading("Mengubah password...");
@@ -144,13 +144,13 @@ export function ProfilePage() {
       return;
     }
     await trackActivity({ type: "password_changed" });
-    toast.success("Password berhasil diubah. Silakan login ulang.", { id });
+    toast.success("Password Diperbarui", { id, description: "Silakan login ulang." });
     await logout();
     router.push("/login");
   }
 
   async function deleteAccount() {
-    if (!deletePassword) return toast.error("Masukkan password untuk konfirmasi");
+    if (!deletePassword) return toast.error("Validasi Gagal", { description: "Masukkan password konfirmasi." });
     setDeleting(true);
     const id = toast.loading("Menghapus akun...");
     const res = await fetch("/api/auth/delete", {
@@ -161,10 +161,10 @@ export function ProfilePage() {
     const data = await res.json().catch(() => ({}));
     setDeleting(false);
     if (!res.ok) {
-      toast.error("Gagal menghapus akun", { id, description: data.error });
+      toast.error("Gagal Menghapus", { id, description: data.error });
       return;
     }
-    toast.success("Akun berhasil dihapus", { id });
+    toast.success("Akun Dihapus", { id });
     await logout();
     router.push("/login");
   }

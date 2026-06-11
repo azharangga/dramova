@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { LogOut, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "@/components/ui/toast";
+import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 
 export default function Topbar() {
@@ -30,7 +30,7 @@ export default function Topbar() {
 
   async function handleLogout() {
     await logout();
-    toast.success("Berhasil keluar", { description: "Sampai jumpa lagi." });
+    toast.success("Berhasil Keluar", { description: "Sampai jumpa lagi!" });
     router.push("/login");
     router.refresh();
   }

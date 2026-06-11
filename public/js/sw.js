@@ -4,7 +4,7 @@
    ===================================================================== */
 
 const CACHE_NAME   = 'dramsi-v31';
-const STATIC_CACHE = 'dramsi-static-v25';
+const STATIC_CACHE = 'dramsi-static-v26';
 const API_CACHE    = 'dramsi-api-v25';
 
 const STATIC_ASSETS = [

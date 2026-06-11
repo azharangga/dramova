@@ -260,6 +260,22 @@
     const eps = episodeCount(item);
     const showEpisodeBadge = eps > 0 && !(platform === 'kdrama' && eps <= 1);
     const platformLabel = (D.Platforms?.[platform]?.label) || platform;
+    
+    let isOngoing = item.isOngoing || item.is_ongoing || item.status === 'Ongoing';
+    let currentEp = item.currentEpisode || item.current_episode;
+    
+    if (item.updateInfo && typeof item.updateInfo === 'string') {
+      const uiLower = item.updateInfo.toLowerCase();
+      if (uiLower.includes('update') || uiLower.includes('ep')) {
+        isOngoing = true;
+        if (!currentEp) {
+          const m = item.updateInfo.match(/\d+/);
+          if (m) currentEp = m[0];
+        }
+      }
+    }
+    
+    const ongoingLabel = isOngoing ? (currentEp ? `Ep ${currentEp}` : 'Ongoing') : '';
 
     const href = D.detailUrl(platform, item.id);
 
@@ -278,6 +294,11 @@
                 style="background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase;">
             ${platformLabel}
           </span>
+          ${isOngoing ? `
+          <span class="absolute left-2 top-2 z-[2] px-1.5 py-0.5 text-[10px] font-bold text-white"
+                style="background: rgba(220,38,38,0.85); backdrop-filter: blur(4px); border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+            ${ongoingLabel}
+          </span>` : ''}
           <img src="${escapeAttr(thumbUrl)}" alt="${escapeAttr(item.title || '')}" loading="lazy"
                data-fallbacks="${escapeAttr(fallbackData)}"
                data-fallback-index="0"

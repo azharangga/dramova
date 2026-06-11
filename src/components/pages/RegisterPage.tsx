@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Turnstile } from "react-turnstile";
 import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, Loader2, Lock, Mail, User, X } from "lucide-react";
-import { toast } from "@/components/ui/toast";
+import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { AuthBrandPanel } from "@/components/auth/AuthBrandPanel";
 
@@ -47,44 +47,44 @@ export function RegisterPage() {
     const cleanName = name.trim();
     const cleanEmail = email.trim().toLowerCase();
     if (cleanName.length < 2 || cleanName.length > 60 || !namePattern.test(cleanName)) {
-      toast.error("Nama hanya boleh huruf, spasi, titik, tanda petik, dan tanda hubung");
+      toast.error("Format Nama Salah", { description: "Gunakan huruf, spasi, titik, atau hubung." });
       resetTurnstile(setTurnstileToken, setTurnstileKey);
       return;
     }
     if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
-      toast.error("Email tidak valid");
+      toast.error("Email Tidak Valid", { description: "Pastikan format email sudah benar." });
       resetTurnstile(setTurnstileToken, setTurnstileKey);
       return;
     }
     if (score < 5) {
-      toast.error("Password belum cukup kuat");
+      toast.error("Password Lemah", { description: "Gunakan kombinasi yang lebih kuat." });
       resetTurnstile(setTurnstileToken, setTurnstileKey);
       return;
     }
     if (password !== confirm) {
-      toast.error("Konfirmasi password tidak cocok");
+      toast.error("Password Berbeda", { description: "Konfirmasi password tidak cocok." });
       resetTurnstile(setTurnstileToken, setTurnstileKey);
       return;
     }
     if (!acceptedTerms) {
-      toast.error("Setujui syarat dan ketentuan terlebih dahulu");
+      toast.error("Persetujuan Dibutuhkan", { description: "Anda harus menyetujui S&K." });
       resetTurnstile(setTurnstileToken, setTurnstileKey);
       return;
     }
     if (!turnstileToken) {
-      toast.error("Selesaikan verifikasi keamanan terlebih dahulu");
+      toast.error("Verifikasi Gagal", { description: "Selesaikan verifikasi keamanan." });
       return;
     }
 
     setLoading(true);
     const { error } = await register(cleanName, cleanEmail, password, turnstileToken);
     if (error) {
-      toast.error("Gagal membuat akun", { description: error });
+      toast.error("Pendaftaran Gagal", { description: error });
       resetTurnstile(setTurnstileToken, setTurnstileKey);
       setLoading(false);
       return;
     }
-    toast.success("Akun berhasil dibuat", { description: `Selamat datang, ${cleanName}.` });
+    toast.success("Pendaftaran Berhasil", { description: `Selamat datang, ${cleanName.split(" ")[0].replace(/[^a-zA-Z]/g, "")}!` });
     router.push("/");
     router.refresh();
   }

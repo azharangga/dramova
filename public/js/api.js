@@ -22,9 +22,15 @@
       credentials: 'same-origin',
       headers: { accept: 'application/json' },
     });
-    if (!res.ok) throw new Error('Request failed');
-    const data = await res.json();
+    let data;
+    try { data = await res.json(); } catch(e) {}
+    
+    if (!res.ok) {
+      if (data && data.message) throw new Error(data.message);
+      throw new Error('Request failed');
+    }
     if (data && data.status === false) {
+      if (data.message) throw new Error(data.message);
       throw new Error('Request failed');
     }
     return data;
@@ -43,7 +49,7 @@
       }
     }
 
-    const err = new Error(friendlyError());
+    const err = new Error(lastError?.message || friendlyError());
     err.cause = lastError;
     throw err;
   }
