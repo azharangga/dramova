@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, History } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
@@ -60,7 +60,7 @@ export default function Topbar() {
           <a href="/discover" data-route="/discover" className="dnav-link inline-flex h-8 items-center px-4 text-sm font-bold transition" style={{ borderRadius: "9999px", color: "var(--text-secondary)", letterSpacing: "0.14px" }}><span data-i18n="nav.discover">Jelajahi</span></a>
           <a href="/series" data-route="/series" className="dnav-link inline-flex h-8 items-center px-4 text-sm font-bold transition" style={{ borderRadius: "9999px", color: "var(--text-secondary)", letterSpacing: "0.14px" }}><span data-i18n="nav.serial">Serial</span></a>
           <a href="/movie" data-route="/movie" className="dnav-link inline-flex h-8 items-center px-4 text-sm font-bold transition" style={{ borderRadius: "9999px", color: "var(--text-secondary)", letterSpacing: "0.14px" }}><span data-i18n="nav.movie">Movie</span></a>
-          <a href="/history" data-route="/history" className="dnav-link inline-flex h-8 items-center px-4 text-sm font-bold transition" style={{ borderRadius: "9999px", color: "var(--text-secondary)", letterSpacing: "0.14px" }}><span data-i18n="nav.history">Riwayat</span></a>
+          <a href="/party" data-route="/party" className="dnav-link inline-flex h-8 items-center px-4 text-sm font-bold transition" style={{ borderRadius: "9999px", color: "var(--text-secondary)", letterSpacing: "0.14px" }}><span data-i18n="nav.party">Nobar</span></a>
         </nav>
         <div className="ml-auto flex items-center gap-3 md:ml-0 md:justify-self-end" suppressHydrationWarning>
           <a href="/search" aria-label="Cari" className="hidden h-9 w-9 shrink-0 place-items-center border transition hover:opacity-80 active:scale-90 md:grid" style={{ borderRadius: "50%", borderColor: "var(--border-muted)", background: "var(--bg-raised)", color: "var(--text-primary)" }} suppressHydrationWarning>
@@ -87,6 +87,7 @@ export default function Topbar() {
                 <span>{user?.email || ""}</span>
               </div>
               <a href="/profile" onClick={() => setProfileOpen(false)}><User size={15} />Profile</a>
+              <a href="/history" onClick={() => setProfileOpen(false)}><History size={15} />Riwayat</a>
               <button onClick={handleLogout}><LogOut size={15} />Logout</button>
             </div>
           </div>

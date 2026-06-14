@@ -110,6 +110,8 @@ export default function RootLayout({
         />
         {/* Original app CSS — preserves all custom styles exactly */}
         <link rel="stylesheet" href="/css/app.css" />
+        {/* Watch Party CSS */}
+        <link rel="stylesheet" href="/css/party.css" />
         {/* Lucide icons — loaded by core-loader */}
         {/* HLS.js — async (bukan defer) supaya bisa ready lebih awal untuk shorts feed */}
         <script

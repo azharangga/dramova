@@ -62,6 +62,24 @@ function rewritePlaylistLine(line: string, baseUrl: string, userAgent: string) {
   return mediaPath("stream", absolute, userAgent);
 }
 
+async function fetchWithRetry(url: string, init: RequestInit, maxRetries = 2): Promise<Response> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fetch(url, init);
+    } catch (err) {
+      lastError = err as Error;
+      const msg = lastError?.message || "";
+      // Only retry on DNS resolution failures
+      const isDnsError = msg.includes("ENOTFOUND") || msg.includes("getaddrinfo");
+      if (!isDnsError || attempt >= maxRetries) throw lastError;
+      // Brief wait before retry
+      await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+    }
+  }
+  throw lastError || new Error("Fetch failed");
+}
+
 async function handleMedia(
   request: NextRequest,
   { params }: { params: Promise<{ kind: "image" | "stream" | "subtitle" }> },
@@ -75,7 +93,7 @@ async function handleMedia(
   const url = readMediaToken(request.nextUrl.searchParams.get("token") || "", kind, userAgent);
   if (!url) return NextResponse.json({ error: "Invalid media token" }, { status: 403 });
 
-  const upstream = await fetch(url, {
+  const upstream = await fetchWithRetry(url, {
     method,
     headers: upstreamHeaders(request),
     cache: kind === "image" ? "force-cache" : "no-store",
