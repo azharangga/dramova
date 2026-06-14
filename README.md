@@ -1,7 +1,7 @@
 <h1 align="center">Dramova</h1>
 
 <p align="center">
-  Platform streaming film, movie & serial modern
+  Platform streaming serial dan movie modern
 </p>
 
 <p align="center">
