@@ -58,6 +58,7 @@
     driftCheckTimer: null,    // Periodic drift check interval
     chatMessages: [],
     maxChatMessages: 200,
+    seenPresenceKeys: new Set(), // Track seen presences to avoid duplicate join notifications
   };
 
   // ── DOM References ───────────────────────────────────────────────────
@@ -177,7 +178,8 @@
       retryBtn.addEventListener('click', () => {
         retryBtn.remove();
         if (state.room) {
-          state.streamCache.delete(`${state.room.current_episode}`);
+          state._isLoadingStream = false; // Reset guard
+          state._videoRetryCount = 0;     // Reset retry counter
           loadStream(state.room.current_episode);
         }
       });
@@ -379,6 +381,12 @@
       }
 
       updateRoomUI();
+
+      // Show success toast for non-host joiners
+      if (!state.isHost) {
+        D.toast?.success?.('Berhasil Bergabung', { description: `Room: ${data.room.title}`, duration: 4000 });
+      }
+
       return true;
     } catch (err) {
       console.error('[Party] Join room error:', err);
@@ -455,8 +463,19 @@
     // Host status updated (UI changes if any)
 
     // Update episode info
+    const currentEp = state.room.current_episode;
     if (dom.episodeText) {
-      dom.episodeText.textContent = `Episode ${state.room.current_episode}`;
+      dom.episodeText.textContent = state.episodes.length
+        ? `Episode ${currentEp} / ${state.episodes.length}`
+        : `Episode ${currentEp}`;
+    }
+
+    // Sync episode button active states
+    if (dom.epList) {
+      dom.epList.querySelectorAll('.party-ep-btn').forEach(btn => {
+        const epNum = parseInt(btn.textContent, 10);
+        btn.classList.toggle('active', epNum === currentEp);
+      });
     }
 
     window.refreshIcons?.();
@@ -535,21 +554,29 @@
 
   // ── Video Playback ───────────────────────────────────────────────────
 
-  // HLS.js config for smooth playback
+  // HLS.js config for fast startup and smooth playback
   const HLS_CONFIG = {
     enableWorker: true,
-    lowLatencyMode: false,          // Disable low-latency for better buffer stability
-    maxBufferLength: 90,            // Buffer up to 90s ahead for smooth playback
-    maxMaxBufferLength: 180,        // Allow up to 180s max buffer
-    maxBufferSize: 80 * 1000 * 1000, // 80MB max buffer
-    maxBufferHole: 0.5,             // Max gap to tolerate
-    startFragPrefetch: true,        // Prefetch next fragment
-    startLevel: -1,                 // Auto quality selection from start
-    abrEwmaDefaultEstimate: 5000000, // 5 Mbps default ABR estimate for faster start
-    appendErrorMaxRetry: 6,         // More retries for append errors
-    liveSyncDurationCount: 3,       // Sync to 3 segments behind live edge
-    liveMaxLatencyDurationCount: 10, // Max 10 segments latency
-    backBufferLength: 30,           // Keep 30s of back buffer for seeking
+    lowLatencyMode: false,
+    maxBufferLength: 60,            // Buffer 60s ahead (reduced for faster startup)
+    maxMaxBufferLength: 180,
+    maxBufferSize: 60 * 1000 * 1000,
+    maxBufferHole: 0.5,
+    startFragPrefetch: true,
+    startLevel: -1,                 // Auto quality from start
+    abrEwmaDefaultEstimate: 3000000, // 3 Mbps default ABR for faster initial quality selection
+    appendErrorMaxRetry: 6,
+    liveSyncDurationCount: 3,
+    liveMaxLatencyDurationCount: 10,
+    backBufferLength: 30,
+    fragLoadingTimeOut: 20000,      // 20s timeout per fragment
+    manifestLoadingTimeOut: 15000,  // 15s timeout for manifest
+    levelLoadingTimeOut: 15000,     // 15s timeout for level
+    fragLoadingMaxRetry: 6,         // More retries per fragment
+    manifestLoadingMaxRetry: 4,
+    levelLoadingMaxRetry: 4,
+    fragLoadingRetryDelay: 1000,    // 1s between retries
+    progressive: true,              // Progressive loading for faster startup
   };
 
   function setVideoSource(url, type) {
@@ -613,8 +640,16 @@
   async function loadStream(episode) {
     if (!state.room) return;
 
+    // Concurrency guard — prevent multiple simultaneous loadStream calls
+    if (state._isLoadingStream) {
+      console.warn('[Party] loadStream already in progress, skipping');
+      return;
+    }
+    state._isLoadingStream = true;
+
     showOverlay('Memuat video...');
     state._streamLoadFailed = false;
+    state._videoRetryCount = 0; // Reset video element retry counter
 
     // Clean up previous HLS instance before loading new stream
     if (state.hls) {
@@ -631,39 +666,31 @@
         throw new Error('Platform tidak didukung');
       }
 
-      // Clear any cached entries to ensure fresh fetch on each loadStream call
-      const cacheKey = `${episode}`;
-      state.streamCache.delete(cacheKey);
-
-      // Retry logic: attempt up to 3 times with backoff
+      // Retry logic: attempt up to 5 times with exponential backoff
       let stream = null;
       let lastError = null;
-      const maxAttempts = 3;
+      const maxAttempts = 5;
 
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        if (!state.streamCache.has(cacheKey)) {
-          const streamPromise = platformConfig.stream(contentId, episode).then(res => {
-            const data = D.unwrap(res) || {};
-            const videoUrl = data.videoUrl || data.url;
-            return { data, videoUrl };
-          });
-          state.streamCache.set(cacheKey, streamPromise);
-        }
-
         try {
-          stream = await state.streamCache.get(cacheKey);
-          if (stream && stream.videoUrl) break; // Success
-          // No URL but no error either — clear and retry
-          state.streamCache.delete(cacheKey);
+          const res = await platformConfig.stream(contentId, episode);
+          const data = D.unwrap(res) || {};
+          const videoUrl = data.videoUrl || data.url;
+
+          if (videoUrl) {
+            stream = { data, videoUrl };
+            break; // Success
+          }
           lastError = new Error('Video URL tidak ditemukan dalam respons');
+          console.warn(`[Party] Stream attempt ${attempt}/${maxAttempts}: no video URL`);
         } catch (err) {
-          state.streamCache.delete(cacheKey);
           lastError = err;
           console.warn(`[Party] Stream attempt ${attempt}/${maxAttempts} failed:`, err.message);
         }
 
         if (attempt < maxAttempts) {
-          await new Promise(r => setTimeout(r, 800 * attempt));
+          // Exponential backoff: 1s, 2s, 4s, 8s
+          await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
         }
       }
 
@@ -679,18 +706,19 @@
       }
 
       const isHls = /\.m3u8(\?|$)/i.test(stream.videoUrl);
-      setVideoSource(stream.videoUrl, isHls ? 'hls' : 'mp4');
 
-      // If HLS.js is not loaded yet, wait and retry
+      // Ensure HLS.js is loaded before setting source (for non-Safari browsers)
       if (isHls && !window.Hls && !dom.video?.canPlayType('application/vnd.apple.mpegurl')) {
-        console.warn('[Party] HLS.js not loaded yet, waiting...');
-        await new Promise(r => setTimeout(r, 2000));
-        if (window.Hls) {
-          setVideoSource(stream.videoUrl, 'hls');
-        } else {
-          showOverlay('Gagal memuat video (HLS tidak tersedia)');
+        console.warn('[Party] HLS.js not loaded, loading from CDN...');
+        try {
+          await loadHlsLib();
+        } catch (loadErr) {
+          console.error('[Party] Failed to load HLS.js:', loadErr);
+          // Fallback: try direct src anyway
         }
       }
+
+      setVideoSource(stream.videoUrl, isHls ? 'hls' : 'mp4');
 
       // Setup HLS error handling for auto-recovery
       if (state.hls) {
@@ -701,19 +729,18 @@
         state.hls.on(window.Hls.ErrorTypes.NETWORK_ERROR, (event, data) => {
           console.warn('[Party] HLS network error:', data?.details);
           if (data?.fatal) {
-            // Try to recover by restarting the load
             state.hls?.destroy();
             state.hls = null;
-            state.streamCache.delete(cacheKey);
-            console.log('[Party] Fatal HLS network error, retrying stream in 2s...');
-            setTimeout(() => loadStream(episode), 2000);
+            console.log('[Party] Fatal HLS network error, retrying stream in 3s...');
+            setTimeout(() => {
+              state._isLoadingStream = false; // Reset guard before retry
+              loadStream(episode);
+            }, 3000);
           }
         });
-        // Handle buffer stall errors with quality downgrade
         state.hls.on(window.Hls.Events.ERROR, (event, data) => {
           if (data?.details === 'bufferStalledError' || data?.details === 'bufferNudgeOnStalled') {
             console.warn('[Party] HLS buffer stalled, attempting quality downgrade...');
-            // Try downgrading quality to recover
             if (state.hls && state.hls.levels && state.hls.levels.length > 1) {
               const currentLevel = state.hls.currentLevel;
               if (currentLevel > 0) {
@@ -727,13 +754,14 @@
     } catch (err) {
       console.error('[Party] Load stream error:', err);
       state._streamLoadFailed = true;
-      state.streamCache.delete(`${episode}`);
       const errMsg = err?.message || '';
       if (errMsg.includes('ENOTFOUND') || errMsg.includes('tidak dapat dihubungi') || errMsg.includes('502')) {
         showOverlay('Server video tidak tersedia, coba lagi nanti');
       } else {
         showOverlay('Gagal memuat video');
       }
+    } finally {
+      state._isLoadingStream = false;
     }
   }
 
@@ -863,7 +891,11 @@
       if (state.room.current_episode !== newEp) {
         state.room.current_episode = newEp;
         state.playbackState.episode = newEp;
-        if (dom.episodeText) dom.episodeText.textContent = `Episode ${newEp}`;
+        if (dom.episodeText) {
+          dom.episodeText.textContent = state.episodes.length
+            ? `Episode ${newEp} / ${state.episodes.length}`
+            : `Episode ${newEp}`;
+        }
         showSyncToast(`Episode diubah ke ${newEp}`);
         loadStream(newEp);
         setTimeout(() => {
@@ -964,10 +996,14 @@
       state.chatMessages = state.chatMessages.slice(-state.maxChatMessages);
     }
 
-    // Track unread on mobile when chat tab is not active
+    // Track unread and show toast when chat tab is not active
     if (activeSidebarTab !== 'chat' && msg.userId !== state.userId) {
       chatUnreadCount++;
       updateChatBadge();
+
+      // Show toast notification for incoming chat message
+      const preview = msg.text.length > 50 ? msg.text.substring(0, 50) + '...' : msg.text;
+      D.toast?.info?.(`${msg.name}`, { description: preview, duration: 4000 });
     }
 
     renderChatMessages();
@@ -1134,13 +1170,21 @@
       setTimeout(() => { window.location.href = '/party'; }, 2000);
     });
 
-    // Presence events - join notification with sound
+    // Presence events - join notification (host only, genuine new joins only)
     state.channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
       console.log('[Party] Presence join:', key, newPresences);
       fetchRoomState();
 
-      // Show join toast with sound (skip for own join)
-      if (newPresences && newPresences.length > 0) {
+      // Track presence key to avoid showing notifications for initial sync
+      if (!state.seenPresenceKeys.has(key)) {
+        state.seenPresenceKeys.add(key);
+        // Skip notification for the very first sync (existing presences when we join)
+        // Only notify for genuinely new joins after initial setup
+        return;
+      }
+
+      // Only host sees join notifications for others
+      if (state.isHost && newPresences && newPresences.length > 0) {
         const pres = newPresences[0];
         if (pres.userId !== state.userId) {
           showJoinNotification(pres);
@@ -1491,18 +1535,15 @@
       const err = video.error;
       const msg = err ? `Code ${err.code}: ${err.message || 'Unknown'}` : 'Unknown error';
       console.error('[Party] Video error:', msg, 'src:', video.src?.substring(0, 100));
-      // Clear cached stream for this episode to force fresh fetch on retry
-      if (state.room) {
-        state.streamCache.delete(`${state.room.current_episode}`);
-      }
-      // Auto-retry up to 2 times with increasing delay
+      // Auto-retry up to 3 times with increasing delay
       const retryCount = state._videoRetryCount || 0;
-      if (retryCount < 2 && state.room) {
+      if (retryCount < 3 && state.room) {
         state._videoRetryCount = retryCount + 1;
         const delay = 2000 * (retryCount + 1);
-        console.log(`[Party] Auto-retrying video load (attempt ${retryCount + 1}/2) in ${delay}ms...`);
+        console.log(`[Party] Auto-retrying video load (attempt ${retryCount + 1}/3) in ${delay}ms...`);
         showOverlay('Memuat ulang video...');
         setTimeout(() => {
+          state._isLoadingStream = false; // Reset guard before retry
           if (state.room) loadStream(state.room.current_episode);
         }, delay);
       } else {
@@ -1541,13 +1582,9 @@
 
       // If video has no source (load failed or never loaded), retry loading
       if (dom.video.readyState === 0) {
-        if (state.room && !state._isLoadingStream) {
-          state._isLoadingStream = true;
-          // Clear cached failures to force fresh fetch
-          state.streamCache.delete(`${state.room.current_episode}`);
+        if (state.room) {
           showOverlay('Memuat video...');
           loadStream(state.room.current_episode).then(() => {
-            state._isLoadingStream = false;
             // Auto-play after successful load
             if (dom.video && dom.video.readyState > 0 && dom.video.paused) {
               dom.video.play().catch(() => {});
@@ -2042,7 +2079,11 @@
     state.playbackState.episode = newEp;
     broadcastPlayback('episode', { episode: newEp, currentTime: 0, status: 'paused' });
     loadStream(newEp);
-    if (dom.episodeText) dom.episodeText.textContent = `Episode ${newEp}`;
+    if (dom.episodeText) {
+      dom.episodeText.textContent = state.episodes.length
+        ? `Episode ${newEp} / ${state.episodes.length}`
+        : `Episode ${newEp}`;
+    }
     
     // Update active state on buttons without full re-render
     dom.epList?.querySelectorAll('.party-ep-btn').forEach(btn => {
@@ -2093,8 +2134,14 @@
     });
     window.refreshIcons?.();
 
-    // Fetch episodes if it's a series
-    if (state.room?.content_type === 'series') {
+    // Setup event listeners BEFORE loading video so events are captured
+    setupVideoEvents();
+    setupControlEvents();
+    setupUIEvents();
+    setupAutoHideControls();
+
+    // Load episodes and video stream in parallel for faster startup
+    const episodePromise = (state.room?.content_type === 'series') ? (async () => {
       try {
         const platformConfig = D.Platforms?.[state.room.platform];
         if (platformConfig && platformConfig.detail) {
@@ -2108,19 +2155,16 @@
       } catch (err) {
         console.error('[Party] Failed to load episodes:', err);
       }
-    }
+    })() : Promise.resolve();
 
-    // Load video stream
-    await loadStream(state.room.current_episode);
+    // Load video stream (non-blocking alongside episodes)
+    const streamPromise = loadStream(state.room.current_episode);
 
-    // Setup realtime channel
+    // Setup realtime channel in parallel
     setupRealtimeChannel();
 
-    // Setup event listeners
-    setupVideoEvents();
-    setupControlEvents();
-    setupUIEvents();
-    setupAutoHideControls();
+    // Wait for both to complete
+    await Promise.all([episodePromise, streamPromise]);
 
     // Initial sync — only hide overlay if video loaded successfully
     if (!state._streamLoadFailed) {

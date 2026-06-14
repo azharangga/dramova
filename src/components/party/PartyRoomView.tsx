@@ -59,7 +59,7 @@ export default function PartyRoomView({ roomId }: PartyRoomViewProps) {
         <div className="party-player-col">
           <div id="partyPlayerWrap" className="party-player-wrap">
             <div id="partyPlayerInner" className="party-player-inner aspect-video">
-              <video id="partyVideo" playsInline className="party-video"></video>
+              <video id="partyVideo" playsInline preload="auto" className="party-video"></video>
               <button id="partyCenterPlayBtn" aria-label="Putar" className="party-center-play">
                 <i data-lucide="play" className="h-9 w-9"></i>
               </button>

@@ -37,7 +37,9 @@
     roomTitle: document.getElementById('wizardRoomTitle'),
     durationGrid: document.getElementById('wizardDurationGrid'),
     customDurationWrap: document.getElementById('wizardCustomDurationWrap'),
-    customDuration: document.getElementById('wizardCustomDuration'),
+    customHours: document.getElementById('wizardCustomHours'),
+    customMinutes: document.getElementById('wizardCustomMinutes'),
+    durationPreview: document.getElementById('wizardDurationPreview'),
     maxParticipants: document.getElementById('wizardMaxParticipants'),
     maxParticipantsHint: document.getElementById('wizardMaxParticipantsHint'),
   };
@@ -51,8 +53,9 @@
     drama: null,          // full detail object
     episodes: [],
     selectedEpisode: 1,
-    duration: 24,         // -1 for unlimited, 0 for custom (uses customMinutes)
-    customMinutes: 60,    // custom duration in minutes
+    duration: 24,         // -1 for unlimited, 0 for custom (uses customHours + customMinutes)
+    customHours: 1,       // custom duration hours part
+    customMinutes: 0,     // custom duration minutes part
   };
 
   const STEP_TITLES = {
@@ -328,14 +331,17 @@
     state.episodes = [];
     state.selectedEpisode = 1;
     state.duration = 24;
-    state.customMinutes = 60;
+    state.customHours = 1;
+    state.customMinutes = 0;
     if (dom.searchInput) dom.searchInput.value = '';
     if (dom.contentGrid) dom.contentGrid.innerHTML = '';
     if (dom.episodeGrid) dom.episodeGrid.innerHTML = '';
     if (dom.roomTitle) dom.roomTitle.value = '';
     if (dom.maxParticipants) dom.maxParticipants.value = '5';
-    if (dom.customDuration) dom.customDuration.value = '';
+    if (dom.customHours) dom.customHours.value = '1';
+    if (dom.customMinutes) dom.customMinutes.value = '0';
     if (dom.customDurationWrap) dom.customDurationWrap.style.display = 'none';
+    if (dom.durationPreview) dom.durationPreview.textContent = 'Total: 1 jam';
     if (dom.maxParticipantsHint) dom.maxParticipantsHint.style.display = 'none';
     if (dom.btnSubmit) dom.btnSubmit.disabled = false;
     // Reset duration chips
@@ -714,9 +720,12 @@
         if (val === 'custom') {
           state.duration = 0; // flag for custom
           if (dom.customDurationWrap) dom.customDurationWrap.style.display = '';
-          // Parse existing custom value
-          const mins = parseInt(dom.customDuration?.value || '60', 10);
-          state.customMinutes = mins > 0 ? mins : 60;
+          // Parse existing values
+          const h = parseInt(dom.customHours?.value || '1', 10);
+          const m = parseInt(dom.customMinutes?.value || '0', 10);
+          state.customHours = h >= 0 ? h : 1;
+          state.customMinutes = m >= 0 ? m : 0;
+          updateDurationPreview();
         } else {
           state.duration = parseInt(val, 10);
           if (dom.customDurationWrap) dom.customDurationWrap.style.display = 'none';
@@ -725,13 +734,71 @@
     });
   }
 
-  // Custom duration input
-  if (dom.customDuration) {
-    dom.customDuration.addEventListener('input', () => {
-      const mins = parseInt(dom.customDuration.value, 10);
-      state.customMinutes = mins > 0 ? mins : 0;
+  // Time picker stepper buttons and inputs
+  function updateDurationPreview() {
+    const h = state.customHours || 0;
+    const m = state.customMinutes || 0;
+    const totalMins = h * 60 + m;
+    let text;
+    if (totalMins === 0) {
+      text = 'Total: 0 menit';
+    } else if (totalMins < 60) {
+      text = `Total: ${totalMins} menit`;
+    } else if (totalMins % 60 === 0) {
+      text = `Total: ${totalMins / 60} jam`;
+    } else {
+      const hrs = Math.floor(totalMins / 60);
+      const mins = totalMins % 60;
+      text = `Total: ${hrs} jam ${mins} menit`;
+    }
+    if (dom.durationPreview) dom.durationPreview.textContent = text;
+  }
+
+  function clampTimeInput(inputEl, min, max) {
+    let val = parseInt(inputEl.value, 10);
+    if (isNaN(val)) val = min;
+    val = Math.min(Math.max(val, min), max);
+    inputEl.value = val;
+    return val;
+  }
+
+  if (dom.customHours) {
+    dom.customHours.addEventListener('input', () => {
+      state.customHours = clampTimeInput(dom.customHours, 0, 168);
+      updateDurationPreview();
     });
   }
+  if (dom.customMinutes) {
+    dom.customMinutes.addEventListener('input', () => {
+      state.customMinutes = clampTimeInput(dom.customMinutes, 0, 59);
+      updateDurationPreview();
+    });
+  }
+
+  // Stepper button handlers
+  document.querySelectorAll('.time-picker-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      if (action === 'hours-dec') {
+        const v = Math.max(0, (parseInt(dom.customHours?.value || '0', 10) || 0) - 1);
+        if (dom.customHours) dom.customHours.value = v;
+        state.customHours = v;
+      } else if (action === 'hours-inc') {
+        const v = Math.min(168, (parseInt(dom.customHours?.value || '0', 10) || 0) + 1);
+        if (dom.customHours) dom.customHours.value = v;
+        state.customHours = v;
+      } else if (action === 'minutes-dec') {
+        const v = Math.max(0, (parseInt(dom.customMinutes?.value || '0', 10) || 0) - 5);
+        if (dom.customMinutes) dom.customMinutes.value = v;
+        state.customMinutes = v;
+      } else if (action === 'minutes-inc') {
+        const v = Math.min(59, (parseInt(dom.customMinutes?.value || '0', 10) || 0) + 5);
+        if (dom.customMinutes) dom.customMinutes.value = v;
+        state.customMinutes = v;
+      }
+      updateDurationPreview();
+    });
+  });
 
   // Max participants validation (max 5)
   if (dom.maxParticipants) {
@@ -770,13 +837,15 @@
     if (state.duration === -1) {
       expires_in_hours = -1; // unlimited
     } else if (state.duration === 0) {
-      // Custom duration in minutes, convert to hours (fractional)
-      const mins = state.customMinutes || parseInt(dom.customDuration?.value || '60', 10);
-      if (!mins || mins < 1) {
+      // Custom duration: hours + minutes -> convert to fractional hours
+      const h = state.customHours || parseInt(dom.customHours?.value || '0', 10);
+      const m = state.customMinutes || parseInt(dom.customMinutes?.value || '0', 10);
+      const totalMins = h * 60 + m;
+      if (!totalMins || totalMins < 1) {
         D.toast?.warning?.('Durasi Tidak Valid', { description: 'Masukkan durasi minimal 1 menit' });
         return;
       }
-      expires_in_hours = mins / 60; // convert minutes to hours
+      expires_in_hours = totalMins / 60; // convert to fractional hours
     } else {
       expires_in_hours = state.duration; // preset hours value
     }

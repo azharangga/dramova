@@ -2542,22 +2542,107 @@
   color: var(--party-accent);
 }
 
-/* Custom Duration Input */
+/* Custom Duration Time Picker */
 .wizard-custom-duration-wrap {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin-top: 0.625rem;
 }
 
-.wizard-custom-duration-wrap input {
-  flex: 1;
-  max-width: 180px;
+.wizard-time-picker {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
 }
 
-.wizard-custom-duration-hint {
+.time-picker-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.time-picker-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--party-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.time-picker-stepper {
+  display: flex;
+  align-items: center;
+  background: var(--party-bg);
+  border: 1px solid var(--party-border);
+  border-radius: var(--party-radius-sm);
+  overflow: hidden;
+}
+
+.time-picker-stepper:focus-within {
+  border-color: var(--party-accent);
+}
+
+.time-picker-btn {
+  width: 36px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  color: var(--party-text-secondary);
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.time-picker-btn:hover {
+  background: var(--party-raised);
+  color: var(--party-accent);
+}
+
+.time-picker-btn:active {
+  background: var(--party-card);
+}
+
+.time-picker-input {
+  width: 48px;
+  height: 40px;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--party-border);
+  border-right: 1px solid var(--party-border);
+  color: var(--party-text);
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: 'Inter', monospace;
+  outline: none;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.time-picker-input::-webkit-outer-spin-button,
+.time-picker-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.time-picker-separator {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--party-text-secondary);
+  padding-bottom: 0.4rem;
+  opacity: 0.5;
+}
+
+.wizard-duration-preview {
   font-size: 0.78rem;
-  color: var(--text-muted, #888);
+  color: var(--party-accent);
+  font-weight: 600;
+  margin: 0;
 }
 
 /* Field validation hint */

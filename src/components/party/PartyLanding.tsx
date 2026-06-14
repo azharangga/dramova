@@ -226,15 +226,26 @@ export default function PartyLanding() {
                   <button className="wizard-duration-chip" data-hours="custom"><span>Custom</span></button>
                 </div>
                 <div id="wizardCustomDurationWrap" className="wizard-custom-duration-wrap" style={{ display: 'none' }}>
-                  <input
-                    id="wizardCustomDuration"
-                    type="number"
-                    min="1"
-                    max="168"
-                    placeholder="Masukkan durasi (menit)"
-                    className="party-form-input"
-                  />
-                  <span className="wizard-custom-duration-hint">menit (min 1, maks 10080)</span>
+                  <div className="wizard-time-picker">
+                    <div className="time-picker-group">
+                      <label className="time-picker-label">Jam</label>
+                      <div className="time-picker-stepper">
+                        <button type="button" className="time-picker-btn" data-action="hours-dec" aria-label="Kurangi jam">−</button>
+                        <input id="wizardCustomHours" type="number" min="0" max="168" defaultValue="1" className="time-picker-input" />
+                        <button type="button" className="time-picker-btn" data-action="hours-inc" aria-label="Tambah jam">+</button>
+                      </div>
+                    </div>
+                    <span className="time-picker-separator">:</span>
+                    <div className="time-picker-group">
+                      <label className="time-picker-label">Menit</label>
+                      <div className="time-picker-stepper">
+                        <button type="button" className="time-picker-btn" data-action="minutes-dec" aria-label="Kurangi menit">−</button>
+                        <input id="wizardCustomMinutes" type="number" min="0" max="59" step="5" defaultValue="0" className="time-picker-input" />
+                        <button type="button" className="time-picker-btn" data-action="minutes-inc" aria-label="Tambah menit">+</button>
+                      </div>
+                    </div>
+                  </div>
+                  <p id="wizardDurationPreview" className="wizard-duration-preview">Total: 1 jam</p>
                 </div>
               </div>
               <div className="party-form-row">
