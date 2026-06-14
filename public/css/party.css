@@ -446,8 +446,9 @@
 }
 
 .party-empty-icon {
+  display: block;
+  margin: 0 auto 1rem;
   color: var(--party-text-tertiary, #5a5a5a);
-  margin-bottom: 1rem;
 }
 
 .party-empty-text {
@@ -892,8 +893,9 @@
 }
 
 .party-expired-icon {
+  display: block;
+  margin: 0 auto 1rem;
   color: var(--party-warning);
-  margin-bottom: 1rem;
 }
 
 .party-expired-title {
@@ -1096,6 +1098,7 @@
   background: rgba(0, 0, 0, 0.82);
   backdrop-filter: blur(2px);
   z-index: 20;
+  pointer-events: none;
 }
 
 .party-loading-overlay.hidden {

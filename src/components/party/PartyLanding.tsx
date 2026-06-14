@@ -10,7 +10,7 @@ export default function PartyLanding() {
         kickerI18n="party.kicker"
         title="Watch Party"
         titleI18n="party.title"
-        subtitle="Tonton film dan serial bersama teman secara real-time. Buat room, bagikan kode, dan nikmati pengalaman menonton bareng."
+        subtitle="Tonton serial atau movie bersama teman secara real-time. Buat room, bagikan kode, dan nikmati pengalaman menonton bareng."
         subtitleI18n="party.subtitle"
       />
 
@@ -23,7 +23,7 @@ export default function PartyLanding() {
           </div>
           <h2 className="party-action-title">Buat Room Baru</h2>
           <p className="party-action-desc">
-            Mulai sesi nonton bareng dengan memilih film atau serial, lalu bagikan kode room ke teman-temanmu.
+            Mulai sesi nonton bareng dengan memilih serial atau movie, lalu bagikan kode room ke teman-temanmu.
           </p>
           <button id="btnCreateRoom" className="party-btn party-btn-primary">
             <i data-lucide="plus" className="h-4 w-4"></i>
@@ -170,7 +170,7 @@ export default function PartyLanding() {
               <div className="wizard-search-bar">
                 <div className="wizard-search-input-wrap">
                   <svg className="wizard-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <input id="wizardSearchInput" type="text" className="party-form-input wizard-search-input" placeholder="Cari judul film atau serial..." autoComplete="off" />
+                  <input id="wizardSearchInput" type="text" className="party-form-input wizard-search-input" placeholder="Cari judul serialatau movie..." autoComplete="off" />
                   <button id="wizardSearchClear" className="wizard-search-clear" style={{ display: "none" }} aria-label="Hapus">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>

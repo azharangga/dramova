@@ -29,6 +29,10 @@ export default function PartyRoomView({ roomId }: PartyRoomViewProps) {
                 <i data-lucide="hash" className="h-3 w-3"></i>
                 <span>------</span>
               </span>
+              <span id="partyHeaderEpisode" className="party-code-badge" style={{ display: 'none' }}>
+                <i data-lucide="film" className="h-3 w-3"></i>
+                <span>Ep --</span>
+              </span>
               <span id="partySyncStatus" className="party-sync-indicator party-sync-connecting">
                 <span className="party-sync-dot"></span>
                 <span>Menghubungkan...</span>
@@ -155,7 +159,7 @@ export default function PartyRoomView({ roomId }: PartyRoomViewProps) {
 
           {/* Participants Panel */}
           <div id="participantsPanel" className="party-panel party-participants-panel is-active" data-tab-content="participants">
-            <div className="party-panel-header">
+            <div className="party-panel-header" style={{ display: 'none' }}>
               <h3 className="party-panel-title">
                 <i data-lucide="users" className="h-4 w-4"></i>
                 <span>Peserta</span>
@@ -169,7 +173,7 @@ export default function PartyRoomView({ roomId }: PartyRoomViewProps) {
 
           {/* Chat Panel */}
           <div id="chatPanel" className="party-panel party-chat-panel" data-tab-content="chat">
-            <div className="party-panel-header">
+            <div className="party-panel-header" style={{ display: 'none' }}>
               <h3 className="party-panel-title">
                 <i data-lucide="message-circle" className="h-4 w-4"></i>
                 <span>Chat</span>
@@ -198,7 +202,7 @@ export default function PartyRoomView({ roomId }: PartyRoomViewProps) {
 
           {/* Episodes Panel */}
           <div id="episodesPanel" className="party-panel party-episodes-panel" data-tab-content="episodes">
-            <div className="party-panel-header">
+            <div className="party-panel-header" style={{ display: 'none' }}>
               <h3 className="party-panel-title">
                 <i data-lucide="film" className="h-4 w-4"></i>
                 <span>Pilih Episode</span>

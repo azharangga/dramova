@@ -384,7 +384,10 @@
 
       // Show success toast for non-host joiners
       if (!state.isHost) {
-        D.toast?.success?.('Berhasil Bergabung', { description: `Room: ${data.room.title}`, duration: 4000 });
+        if (!sessionStorage.getItem('party_joined_' + roomId)) {
+          D.toast?.success?.('Berhasil Bergabung', { description: `Room: ${data.room.title}`, duration: 4000 });
+          sessionStorage.setItem('party_joined_' + roomId, 'true');
+        }
       }
 
       return true;
@@ -468,6 +471,16 @@
       dom.episodeText.textContent = state.episodes.length
         ? `Episode ${currentEp} / ${state.episodes.length}`
         : `Episode ${currentEp}`;
+    }
+
+    // Update header episode badge
+    const headerEp = document.getElementById('partyHeaderEpisode');
+    if (headerEp && state.room.content_type === 'series') {
+      headerEp.style.display = '';
+      const headerEpSpan = headerEp.querySelector('span');
+      if (headerEpSpan) headerEpSpan.textContent = `Ep ${currentEp}`;
+    } else if (headerEp) {
+      headerEp.style.display = 'none';
     }
 
     // Sync episode button active states
@@ -558,23 +571,23 @@
   const HLS_CONFIG = {
     enableWorker: true,
     lowLatencyMode: false,
-    maxBufferLength: 60,            // Buffer 60s ahead (reduced for faster startup)
-    maxMaxBufferLength: 180,
-    maxBufferSize: 60 * 1000 * 1000,
+    maxBufferLength: 120,            // Buffer 120s ahead for smoother playback
+    maxMaxBufferLength: 240,
+    maxBufferSize: 120 * 1000 * 1000,
     maxBufferHole: 0.5,
     startFragPrefetch: true,
     startLevel: -1,                 // Auto quality from start
-    abrEwmaDefaultEstimate: 3000000, // 3 Mbps default ABR for faster initial quality selection
-    appendErrorMaxRetry: 6,
+    abrEwmaDefaultEstimate: 1000000, // 1 Mbps default to start faster without buffering
+    appendErrorMaxRetry: 10,
     liveSyncDurationCount: 3,
     liveMaxLatencyDurationCount: 10,
-    backBufferLength: 30,
-    fragLoadingTimeOut: 20000,      // 20s timeout per fragment
-    manifestLoadingTimeOut: 15000,  // 15s timeout for manifest
-    levelLoadingTimeOut: 15000,     // 15s timeout for level
-    fragLoadingMaxRetry: 6,         // More retries per fragment
-    manifestLoadingMaxRetry: 4,
-    levelLoadingMaxRetry: 4,
+    backBufferLength: 60,
+    fragLoadingTimeOut: 30000,      // 30s timeout per fragment
+    manifestLoadingTimeOut: 20000,  // 20s timeout for manifest
+    levelLoadingTimeOut: 20000,     // 20s timeout for level
+    fragLoadingMaxRetry: 10,         // More retries per fragment
+    manifestLoadingMaxRetry: 6,
+    levelLoadingMaxRetry: 6,
     fragLoadingRetryDelay: 1000,    // 1s between retries
     progressive: true,              // Progressive loading for faster startup
   };
@@ -867,12 +880,12 @@
       if (video.paused) {
         video.currentTime = adjustedTime;
         video.play().catch(() => {});
-      } else if (drift > 1.0) {
-        // Correct drift > 1.0s during playback
+      } else if (drift > 0.8) {
+        // Correct drift > 0.8s during playback
         applyDriftCorrection(adjustedTime, drift);
         updateSyncStatus('syncing');
       }
-      // Skip correction if drift <= 1.0s — playback is close enough
+      // Skip correction if drift <= 0.8s — playback is close enough
     } else if (event === 'pause') {
       if (!video.paused) video.pause();
       if (drift > 0.3) {
@@ -896,6 +909,15 @@
             ? `Episode ${newEp} / ${state.episodes.length}`
             : `Episode ${newEp}`;
         }
+
+        // Update header episode badge
+        const headerEp = document.getElementById('partyHeaderEpisode');
+        if (headerEp) {
+          headerEp.style.display = '';
+          const headerEpSpan = headerEp.querySelector('span');
+          if (headerEpSpan) headerEpSpan.textContent = `Ep ${newEp}`;
+        }
+
         showSyncToast(`Episode diubah ke ${newEp}`);
         loadStream(newEp);
         setTimeout(() => {
@@ -917,42 +939,18 @@
     state.lastSyncTime = Date.now();
   }
 
-  /**
-   * Tiered drift correction:
-   * - 1.0-3s: gentle playback rate adjustment (+/-0.08)
-   * - 3-6s: moderate rate adjustment (+/-0.15)
-   * - >6s: direct seek (extreme desync only)
-   */
   function applyDriftCorrection(targetTime, drift) {
     const video = dom.video;
     if (!video) return;
 
     clearTimeout(state._driftCorrectionTimer);
 
-    if (drift >= 6) {
-      // Large drift: direct seek (rare, only for extreme desync)
+    if (drift > 1.0) {
+      // Direct seek to strictly maintain real-time sync without altering playback speed
       video.currentTime = targetTime;
+      // Ensure playback rate stays at user's setting
+      video.playbackRate = state.playbackRate;
       console.log('[Party] Drift correction: direct seek, drift=', drift.toFixed(1) + 's');
-    } else {
-      // Gradual correction via playback rate adjustment
-      const direction = targetTime > video.currentTime ? 1 : -1;
-      let rateOffset;
-
-      if (drift >= 3) {
-        rateOffset = 0.15; // Moderate correction for 3-6s drift
-      } else {
-        rateOffset = 0.08; // Gentle correction for 1.0-3s drift
-      }
-
-      video.playbackRate = state.playbackRate + (direction * rateOffset);
-      const correctionDuration = Math.min(drift * 1200, 6000); // Faster correction window
-
-      state._driftCorrectionTimer = setTimeout(() => {
-        if (video) video.playbackRate = state.playbackRate;
-      }, correctionDuration);
-
-      console.log('[Party] Drift correction: rate adjust', (direction * rateOffset).toFixed(2),
-        'for', (correctionDuration / 1000).toFixed(1) + 's, drift=', drift.toFixed(1) + 's');
     }
   }
 
@@ -1014,15 +1012,23 @@
     if (chatUnreadCount > 0) {
       if (dom.chatUnreadBadge) {
         dom.chatUnreadBadge.textContent = chatUnreadCount > 99 ? '99+' : String(chatUnreadCount);
-        dom.chatUnreadBadge.style.display = '';
+        dom.chatUnreadBadge.style.display = 'flex';
+        dom.chatUnreadBadge.hidden = false;
       }
       if (dom.sidebarToggleBadge) {
         dom.sidebarToggleBadge.textContent = chatUnreadCount > 99 ? '99+' : String(chatUnreadCount);
-        dom.sidebarToggleBadge.style.display = '';
+        dom.sidebarToggleBadge.style.display = 'flex';
+        dom.sidebarToggleBadge.hidden = false;
       }
     } else {
-      if (dom.chatUnreadBadge) dom.chatUnreadBadge.style.display = 'none';
-      if (dom.sidebarToggleBadge) dom.sidebarToggleBadge.style.display = 'none';
+      if (dom.chatUnreadBadge) {
+        dom.chatUnreadBadge.style.display = 'none';
+        dom.chatUnreadBadge.hidden = true;
+      }
+      if (dom.sidebarToggleBadge) {
+        dom.sidebarToggleBadge.style.display = 'none';
+        dom.sidebarToggleBadge.hidden = true;
+      }
     }
   }
 
@@ -1170,18 +1176,26 @@
       setTimeout(() => { window.location.href = '/party'; }, 2000);
     });
 
+    let isInitialSync = true;
+    setTimeout(() => { isInitialSync = false; }, 3000);
+
     // Presence events - join notification (host only, genuine new joins only)
     state.channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
       console.log('[Party] Presence join:', key, newPresences);
       fetchRoomState();
 
       // Track presence key to avoid showing notifications for initial sync
-      if (!state.seenPresenceKeys.has(key)) {
+      if (isInitialSync) {
         state.seenPresenceKeys.add(key);
-        // Skip notification for the very first sync (existing presences when we join)
-        // Only notify for genuinely new joins after initial setup
         return;
       }
+
+      // If already seen, don't show notification again (e.g. they refreshed)
+      if (state.seenPresenceKeys.has(key)) {
+        return;
+      }
+      
+      state.seenPresenceKeys.add(key);
 
       // Only host sees join notifications for others
       if (state.isHost && newPresences && newPresences.length > 0) {
@@ -1918,6 +1932,18 @@
     setControlsVisible(true);
   }
 
+  let tapTimer = null;
+  let lastTap = { time: 0, side: '', x: 0, y: 0 };
+  const TAP_DELAY_MS = 230;
+  const DOUBLE_TAP_MS = 320;
+
+  function isMobileViewport() {
+    return window.matchMedia?.('(max-width: 767.98px), (pointer: coarse)').matches;
+  }
+  function isTouchLikePointer(e) {
+    return e?.pointerType === 'touch' || e?.pointerType === 'pen';
+  }
+
   function setupAutoHideControls() {
     const inner = dom.playerInner;
     const video = dom.video;
@@ -1958,19 +1984,51 @@
       const g = gesture;
       gesture = null;
 
-      // If it was a drag, ignore
-      if (g.moved || Date.now() - g.time > 500) return;
       // If clicking on controls, ignore (handled by holdControlsVisible)
       if (e.target.closest('button, input, .party-controls, .party-speed-menu')) return;
 
-      // Tap toggles controls visibility
-      const isHidden = inner.classList.contains('controls-hidden');
-      if (isHidden) {
+      const dx = e.clientX - g.x;
+      const dy = e.clientY - g.y;
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+      const elapsed = Date.now() - g.time;
+
+      if (g.moved || elapsed > 520 || adx > 18 || ady > 18) return;
+
+      const rect = inner.getBoundingClientRect();
+      const side = e.clientX < rect.left + rect.width / 2 ? 'left' : 'right';
+      const now = Date.now();
+      const mobileGesture = isMobileViewport() || (document.fullscreenElement && isTouchLikePointer(e));
+      const isDoubleTap = mobileGesture
+        && lastTap.side === side
+        && now - lastTap.time <= DOUBLE_TAP_MS
+        && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 80;
+
+      if (isDoubleTap) {
+        clearTimeout(tapTimer);
+        tapTimer = null;
+        lastTap = { time: 0, side: '', x: 0, y: 0 };
+        if (side === 'left') {
+          dom.rewindBtn?.click();
+        } else {
+          dom.forwardBtn?.click();
+        }
         showControlsAndScheduleHide();
-      } else {
-        setControlsVisible(false);
-        clearTimeout(controlsHideTimer);
+        return;
       }
+
+      lastTap = { time: now, side, x: e.clientX, y: e.clientY };
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(() => {
+        tapTimer = null;
+        const isHidden = inner.classList.contains('controls-hidden');
+        if (isHidden) {
+          showControlsAndScheduleHide();
+        } else {
+          setControlsVisible(false);
+          clearTimeout(controlsHideTimer);
+        }
+      }, mobileGesture ? TAP_DELAY_MS : 0);
     }, { passive: true });
 
     inner.addEventListener('pointercancel', () => { gesture = null; }, { passive: true });
@@ -2085,6 +2143,14 @@
         : `Episode ${newEp}`;
     }
     
+    // Update header episode badge
+    const headerEp = document.getElementById('partyHeaderEpisode');
+    if (headerEp) {
+      headerEp.style.display = '';
+      const headerEpSpan = headerEp.querySelector('span');
+      if (headerEpSpan) headerEpSpan.textContent = `Ep ${newEp}`;
+    }
+    
     // Update active state on buttons without full re-render
     dom.epList?.querySelectorAll('.party-ep-btn').forEach(btn => {
       const epNum = parseInt(btn.textContent, 10);
@@ -2151,6 +2217,14 @@
           state.drama = drama;
           state.episodes = drama.episodes || data.episodes || [];
           renderEpisodeMenu();
+
+          // Initialize header episode badge for series
+          const headerEp = document.getElementById('partyHeaderEpisode');
+          if (headerEp) {
+            headerEp.style.display = '';
+            const headerEpSpan = headerEp.querySelector('span');
+            if (headerEpSpan) headerEpSpan.textContent = `Ep ${state.room.current_episode}`;
+          }
         }
       } catch (err) {
         console.error('[Party] Failed to load episodes:', err);
