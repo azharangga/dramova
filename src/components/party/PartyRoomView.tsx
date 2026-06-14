@@ -217,7 +217,7 @@ export default function PartyRoomView({ roomId }: PartyRoomViewProps) {
       </div>
 
       {/* Invite Modal */}
-      <div id="inviteModal" className="party-modal-backdrop" aria-hidden="true">
+      <div id="inviteModal" className="party-modal-backdrop" aria-hidden="true" style={{ display: 'none' }}>
         <div className="party-modal party-modal-sm" role="dialog" aria-modal="true">
           <div className="party-modal-header">
             <h3 className="party-modal-title">Undang Teman</h3>

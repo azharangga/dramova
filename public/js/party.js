@@ -567,17 +567,17 @@
 
   // ── Video Playback ───────────────────────────────────────────────────
 
-  // HLS.js config for fast startup and smooth playback
+  // HLS.js config for fast startup and smooth playback (Google Meet style)
   const HLS_CONFIG = {
     enableWorker: true,
-    lowLatencyMode: false,
-    maxBufferLength: 120,            // Buffer 120s ahead for smoother playback
-    maxMaxBufferLength: 240,
-    maxBufferSize: 120 * 1000 * 1000,
+    lowLatencyMode: true,            // Enable low latency mode for live-like sync
+    maxBufferLength: 30,             // Lower buffer to adapt quality faster on mobile
+    maxMaxBufferLength: 60,
+    maxBufferSize: 60 * 1000 * 1000,
     maxBufferHole: 0.5,
     startFragPrefetch: true,
     startLevel: -1,                 // Auto quality from start
-    abrEwmaDefaultEstimate: 1000000, // 1 Mbps default to start faster without buffering
+    abrEwmaDefaultEstimate: 500000, // 500kbps default to start instantly without buffering
     appendErrorMaxRetry: 10,
     liveSyncDurationCount: 3,
     liveMaxLatencyDurationCount: 10,
@@ -860,7 +860,7 @@
     clearTimeout(state.syncGuardTimer);
     state.syncGuardTimer = setTimeout(() => {
       state.isApplyingSync = false;
-    }, 350);
+    }, 2000);
 
     // Update EMA with remote timestamp if available
     if (payload.updatedAt) {
@@ -945,8 +945,14 @@
 
     clearTimeout(state._driftCorrectionTimer);
 
-    if (drift > 1.0) {
+    if (drift > 2.5) {
       // Direct seek to strictly maintain real-time sync without altering playback speed
+      state.isApplyingSync = true;
+      clearTimeout(state.syncGuardTimer);
+      state.syncGuardTimer = setTimeout(() => {
+        state.isApplyingSync = false;
+      }, 2000);
+
       video.currentTime = targetTime;
       // Ensure playback rate stays at user's setting
       video.playbackRate = state.playbackRate;
@@ -1129,7 +1135,7 @@
       const drift = Math.abs(localTime - remoteTime);
 
       // Only correct if drift is significant and we're both playing the same episode
-      if (drift > 1.5 && payload.isPlaying && !dom.video.paused &&
+      if (drift > 2.5 && payload.isPlaying && !dom.video.paused &&
           payload.episode === (state.room?.current_episode || 1)) {
         applyDriftCorrection(remoteTime, drift);
         updateSyncStatus('syncing');
@@ -1514,6 +1520,10 @@
       updatePlayerControls();
       if (!state.isApplyingSync) {
         broadcastPlayback('seek', { currentTime: video.currentTime });
+      } else {
+        // Release guard shortly after the seek is finished
+        clearTimeout(state.syncGuardTimer);
+        state.syncGuardTimer = setTimeout(() => { state.isApplyingSync = false; }, 200);
       }
     });
 
@@ -1566,21 +1576,8 @@
       }
     });
 
-    // Buffering indicators: show on waiting/stalled, hide on playing/canplay
-    video.addEventListener('waiting', () => {
-      showBuffering();
-    });
-
-    video.addEventListener('stalled', () => {
-      showBuffering();
-    });
-
-    video.addEventListener('canplay', () => {
-      hideBuffering();
-    });
-
+    // We do NOT show buffering spinner on waiting/stalled to emulate Google Meet's seamless freeze/resume
     video.addEventListener('playing', () => {
-      hideBuffering();
       if (state.isConnected && state.syncState !== 'syncing') {
         updateSyncStatus('connected');
       }

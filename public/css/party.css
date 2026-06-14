@@ -492,11 +492,13 @@
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.2s ease;
 }
 
 .party-modal-backdrop.is-visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .party-modal {
@@ -1357,26 +1359,23 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── Buffering Overlay (distinct from initial loading) ────────────────────── */
+/* ─── Buffering Overlay (Minimalist) ────────────────────── */
 .party-buffering-overlay {
   position: absolute;
   inset: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(1px);
   z-index: 18;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
+  /* Removed dark background and blur for elegant minimalist look */
 }
 
 .party-buffering-overlay.is-visible {
   opacity: 1;
-  pointer-events: none; /* Allow clicks through to controls below */
+  pointer-events: none;
 }
 
 .party-buffering-spinner {
@@ -1384,15 +1383,17 @@
   height: 44px;
   display: grid;
   place-items: center;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
 }
 
 .party-buffering-ring {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.15);
+  border: 2.5px solid rgba(255, 255, 255, 0.15);
   border-top-color: #2BA641;
-  animation: partyBufferingSpin 0.85s linear infinite;
+  animation: partyBufferingSpin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @keyframes partyBufferingSpin {
@@ -1400,10 +1401,7 @@
 }
 
 .party-buffering-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.78);
-  letter-spacing: 0.01em;
+  display: none; /* Hidden for minimalist look */
 }
 
 /* ─── Sync Status: Buffering State (amber pulsing dot) ─────────────────────── */
