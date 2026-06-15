@@ -354,9 +354,48 @@ export async function getRoomState(
     .eq("room_id", roomId)
     .order("joined_at", { ascending: true });
 
+  const allParticipants = (participants || []) as RoomParticipant[];
+
+  // Clean up stale participants (heartbeat older than 30s = disconnected)
+  const now = Date.now();
+  const staleThreshold = 30000; // 30 seconds without heartbeat
+  const staleIds: string[] = [];
+  const activeParticipants: RoomParticipant[] = [];
+
+  for (const p of allParticipants) {
+    const lastBeat = new Date(p.last_heartbeat_at).getTime();
+    if (now - lastBeat > staleThreshold) {
+      staleIds.push(p.id);
+    } else {
+      activeParticipants.push(p);
+    }
+  }
+
+  // Remove stale participants in background (don't block response)
+  if (staleIds.length > 0) {
+    supabase
+      .from("watch_room_participants")
+      .delete()
+      .in("id", staleIds)
+      .then(() => {
+        // Log leave activity for each stale participant
+        for (const staleId of staleIds) {
+          const stale = allParticipants.find(p => p.id === staleId);
+          if (stale) {
+            supabase.from("watch_room_activity_log").insert({
+              room_id: roomId,
+              user_id: stale.user_id,
+              action: "leave",
+              metadata: { reason: "heartbeat_timeout" },
+            });
+          }
+        }
+      });
+  }
+
   return {
     room: room as WatchRoom,
-    participants: (participants || []) as RoomParticipant[],
+    participants: activeParticipants,
   };
 }
 

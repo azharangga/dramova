@@ -15,14 +15,14 @@ export default function PartyLanding() {
       />
 
       {/* Action Cards */}
-      <div className="party-action-grid">
+      <div className="party-action-grid gap-3 sm:gap-4 mt-4 sm:mt-6 mb-5 sm:mb-8">
         {/* Create Room Card */}
-        <div className="party-action-card party-create-card">
-          <div className="party-action-icon">
-            <i data-lucide="plus-circle" className="h-7 w-7"></i>
+        <div className="party-action-card party-create-card p-4 sm:p-5">
+          <div className="party-action-icon !w-9 !h-9 sm:!w-11 sm:!h-11 !mb-3 sm:!mb-4">
+            <i data-lucide="plus-circle" className="h-6 w-6 sm:h-7 sm:w-7"></i>
           </div>
-          <h2 className="party-action-title">Buat Room Baru</h2>
-          <p className="party-action-desc">
+          <h2 className="party-action-title !text-[0.95rem] sm:!text-[1.05rem]">Buat Room Baru</h2>
+          <p className="party-action-desc !text-[0.8rem] sm:!text-[0.85rem] !mb-4 sm:!mb-5">
             Mulai sesi nonton bareng dengan memilih serial atau movie, lalu bagikan kode room ke teman-temanmu.
           </p>
           <button id="btnCreateRoom" className="party-btn party-btn-primary">
@@ -32,12 +32,12 @@ export default function PartyLanding() {
         </div>
 
         {/* Join Room Card */}
-        <div className="party-action-card party-join-card">
-          <div className="party-action-icon">
-            <i data-lucide="users" className="h-7 w-7"></i>
+        <div className="party-action-card party-join-card p-4 sm:p-5">
+          <div className="party-action-icon !w-9 !h-9 sm:!w-11 sm:!h-11 !mb-3 sm:!mb-4">
+            <i data-lucide="users" className="h-6 w-6 sm:h-7 sm:w-7"></i>
           </div>
-          <h2 className="party-action-title">Gabung Room</h2>
-          <p className="party-action-desc">
+          <h2 className="party-action-title !text-[0.95rem] sm:!text-[1.05rem]">Gabung Room</h2>
+          <p className="party-action-desc !text-[0.8rem] sm:!text-[0.85rem] !mb-4 sm:!mb-5">
             Masukkan kode 6 digit yang dibagikan teman untuk bergabung dalam sesi nonton bareng.
           </p>
           <div className="party-join-form">
@@ -67,8 +67,8 @@ export default function PartyLanding() {
       </div>
 
       {/* Active Rooms Section */}
-      <div className="party-rooms-section">
-        <div className="party-section-header">
+      <div className="party-rooms-section mt-5 sm:mt-8">
+        <div className="party-section-header !mb-3 sm:!mb-4 !pb-2 sm:!pb-3">
           <h2 className="party-section-title">
             <i data-lucide="radio" className="h-5 w-5"></i>
             <span>Room Aktif Saya</span>
@@ -96,7 +96,7 @@ export default function PartyLanding() {
           <p className="party-empty-hint">Buat room baru atau gabung dengan kode dari teman</p>
         </div>
 
-        <div id="partyRoomsList" className="party-rooms-list" style={{ display: "none" }}>
+        <div id="partyRoomsList" className="party-rooms-list gap-2 sm:gap-3" style={{ display: "none" }}>
           {/* Rooms will be rendered here by party-landing.js */}
         </div>
       </div>

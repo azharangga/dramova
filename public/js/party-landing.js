@@ -194,24 +194,24 @@
       const isExpired = expiresLabel === 'Kedaluwarsa';
       return `
         <div class="party-room-card-wrap">
-          <a href="/party/room/${room.id}" class="party-room-card ${isExpired ? 'is-expired' : ''}">
+          <a href="/party/room/${room.id}" class="party-room-card !py-3 sm:!py-4 !px-4 sm:!px-5 ${isExpired ? 'is-expired' : ''}">
             <div class="party-room-card-header">
-              <div class="party-room-card-title">${escapeHtml(room.title)}</div>
-              <span class="party-room-card-code">${room.code}</span>
+              <div class="party-room-card-title !text-[0.88rem] sm:!text-[0.95rem]">${escapeHtml(room.title)}</div>
+              <span class="party-room-card-code !text-[0.7rem] sm:!text-[0.75rem]">${room.code}</span>
             </div>
-            <div class="party-room-card-info">
+            <div class="party-room-card-info !mt-1.5 sm:!mt-2 !text-[0.75rem] sm:!text-[0.8rem] !gap-1.5 sm:!gap-2">
               ${isHost ? '<span class="party-room-card-host"><i data-lucide="crown" class="h-3 w-3"></i>Host</span><span class="party-room-card-separator">\u2022</span>' : ''}
               <span class="party-room-card-type"><i data-lucide="film" class="h-3 w-3"></i>${getContentTypeLabel(room.content_type)}</span>
               <span class="party-room-card-separator">\u2022</span>
               <span>${getPlatformLabel(room.platform)}</span>
               ${expiresLabel ? `<span class="party-room-card-separator">\u2022</span><span class="party-room-card-expires ${isExpired ? 'is-expired' : ''}"><i data-lucide="clock" class="h-3 w-3"></i>${expiresLabel}</span>` : ''}
             </div>
-            <div class="party-room-card-footer">
+            <div class="party-room-card-footer !mt-2 sm:!mt-3 !pt-2 sm:!pt-3 !text-[0.7rem] sm:!text-[0.75rem]">
               <span class="party-room-card-time"><i data-lucide="clock" class="h-3 w-3"></i>${formatTimeAgo(room.created_at)}</span>
               <span class="party-room-card-ep">Ep ${room.current_episode}</span>
             </div>
           </a>
-          ${isHost ? `<button class="party-room-card-delete" data-room-id="${room.id}" data-room-code="${room.code}" aria-label="Hapus room" title="Tutup room">
+          ${isHost ? `<button class="party-room-card-delete !right-2 sm:!right-3 !w-8 !h-8 sm:!w-9 sm:!h-9" data-room-id="${room.id}" data-room-code="${room.code}" aria-label="Hapus room" title="Tutup room">
             <i data-lucide="trash-2" class="h-4 w-4"></i>
           </button>` : ''}
         </div>

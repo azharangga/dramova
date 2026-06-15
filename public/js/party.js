@@ -129,6 +129,11 @@
 
   // ── Helpers ──────────────────────────────────────────────────────────
 
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      || window.innerWidth < 768;
+  }
+
   function formatTime(seconds) {
     const total = Math.max(0, Math.floor(seconds || 0));
     const h = Math.floor(total / 3600);
@@ -567,29 +572,31 @@
 
   // ── Video Playback ───────────────────────────────────────────────────
 
-  // HLS.js config for fast startup and smooth playback (Google Meet style)
+  // HLS.js config — optimized per device type
+  const isMobile = isMobileDevice();
   const HLS_CONFIG = {
-    enableWorker: true,
-    lowLatencyMode: true,            // Enable low latency mode for live-like sync
-    maxBufferLength: 30,             // Lower buffer to adapt quality faster on mobile
-    maxMaxBufferLength: 60,
-    maxBufferSize: 60 * 1000 * 1000,
+    enableWorker: !isMobile,              // Workers can cause issues on low-end mobile
+    lowLatencyMode: true,
+    maxBufferLength: isMobile ? 15 : 30,  // Shorter buffer on mobile = faster adapt
+    maxMaxBufferLength: isMobile ? 30 : 60,
+    maxBufferSize: isMobile ? 20 * 1000 * 1000 : 40 * 1000 * 1000,
     maxBufferHole: 0.5,
     startFragPrefetch: true,
-    startLevel: -1,                 // Auto quality from start
-    abrEwmaDefaultEstimate: 500000, // 500kbps default to start instantly without buffering
+    startLevel: -1,                       // Auto quality from start
+    abrEwmaDefaultEstimate: isMobile ? 300000 : 500000,
     appendErrorMaxRetry: 10,
     liveSyncDurationCount: 3,
     liveMaxLatencyDurationCount: 10,
-    backBufferLength: 60,
-    fragLoadingTimeOut: 30000,      // 30s timeout per fragment
-    manifestLoadingTimeOut: 20000,  // 20s timeout for manifest
-    levelLoadingTimeOut: 20000,     // 20s timeout for level
-    fragLoadingMaxRetry: 10,         // More retries per fragment
-    manifestLoadingMaxRetry: 6,
-    levelLoadingMaxRetry: 6,
-    fragLoadingRetryDelay: 1000,    // 1s between retries
-    progressive: true,              // Progressive loading for faster startup
+    backBufferLength: isMobile ? 30 : 60,
+    fragLoadingTimeOut: 20000,
+    manifestLoadingTimeOut: 15000,
+    levelLoadingTimeOut: 15000,
+    fragLoadingMaxRetry: isMobile ? 6 : 10,
+    manifestLoadingMaxRetry: 4,
+    levelLoadingMaxRetry: 4,
+    fragLoadingRetryDelay: isMobile ? 2000 : 1000,
+    progressive: true,
+    capLevelToPlayerSize: isMobile,       // Don't load quality above screen res on mobile
   };
 
   function setVideoSource(url, type) {
@@ -633,7 +640,7 @@
       video.src = url;
     }
 
-    video.preload = 'auto';
+    video.preload = isMobile ? 'metadata' : 'auto'; // Lighter preload on mobile
     video.load();
   }
 
@@ -1287,21 +1294,63 @@
   function startHeartbeat() {
     if (state.heartbeatTimer) clearInterval(state.heartbeatTimer);
 
-    state.heartbeatTimer = setInterval(async () => {
+    const sendHeartbeat = async () => {
       if (!state.isConnected || !state.channel) return;
-
       try {
-        // Use sendBeacon for lightweight heartbeat (no response needed, lower overhead)
         const url = `/api/party/rooms/${roomId}/sync`;
         if (navigator.sendBeacon) {
+          // sendBeacon sends POST with no body, very lightweight
           navigator.sendBeacon(url);
         } else {
-          await fetch(url, { headers: { accept: 'application/json' }, keepalive: true });
+          await fetch(url, { method: 'POST', keepalive: true });
         }
       } catch (err) {
         console.warn('[Party] Heartbeat failed:', err);
       }
-    }, 8000); // Every 8 seconds
+    };
+
+    // Send immediately, then every 5 seconds for faster stale detection
+    sendHeartbeat();
+    state.heartbeatTimer = setInterval(sendHeartbeat, 5000);
+  }
+
+  // ── Page Leave & Cleanup ──────────────────────────────────────────────
+
+  let _hasCleanedUp = false;
+
+  /**
+   * Send leave beacon when user navigates away, closes tab, or app is backgrounded.
+   * Uses navigator.sendBeacon for reliable delivery even during page unload.
+   */
+  function sendLeaveBeacon() {
+    if (_hasCleanedUp) return;
+    _hasCleanedUp = true;
+
+    const url = `/api/party/rooms/${roomId}/leave`;
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(url);
+    } else {
+      // Synchronous XHR fallback (deprecated but still works in beforeunload)
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url, false); // synchronous
+        xhr.send();
+      } catch (e) { /* ignore during unload */ }
+    }
+  }
+
+  function performCleanup() {
+    if (state.channel) state.supabase?.removeChannel(state.channel);
+    if (state.heartbeatTimer) clearInterval(state.heartbeatTimer);
+    if (state.driftCheckTimer) clearInterval(state.driftCheckTimer);
+    if (countdownTimer) clearInterval(countdownTimer);
+    if (state.hls) state.hls.destroy();
+    clearTimeout(state.syncGuardTimer);
+    clearTimeout(state.syncDebounceTimer);
+    clearTimeout(state.bufferingTimer);
+    clearTimeout(state.pendingSeekBroadcast);
+    clearTimeout(state._driftCorrectionTimer);
+    clearTimeout(state._syncRevertTimer);
   }
 
   // ── Join Notification with Sound ──────────────────────────────────────
@@ -1400,12 +1449,8 @@
       }
       if (redirectSeconds <= 0) {
         clearInterval(redirectTimer);
-        // Cleanup
-        if (state.channel) state.supabase?.removeChannel(state.channel);
-        if (state.heartbeatTimer) clearInterval(state.heartbeatTimer);
-        if (state.driftCheckTimer) clearInterval(state.driftCheckTimer);
-        if (state.hls) state.hls.destroy();
-        if (countdownTimer) clearInterval(countdownTimer);
+        _hasCleanedUp = true;
+        performCleanup();
         window.location.href = '/party';
       }
     }, 1000);
@@ -1452,16 +1497,14 @@
 
     try {
       await fetch(`/api/party/rooms/${roomId}/leave`, { method: 'POST' });
-
-      // Cleanup
-      if (state.channel) state.supabase?.removeChannel(state.channel);
-      if (state.heartbeatTimer) clearInterval(state.heartbeatTimer);
-      if (state.driftCheckTimer) clearInterval(state.driftCheckTimer);
-      if (state.hls) state.hls.destroy();
-
+      // Mark as cleaned up so beforeunload doesn't double-send
+      _hasCleanedUp = true;
+      performCleanup();
       window.location.href = '/party';
     } catch (err) {
       console.error('[Party] Leave error:', err);
+      sendLeaveBeacon();
+      performCleanup();
       window.location.href = '/party';
     }
   }
@@ -1884,19 +1927,29 @@
       }
     });
 
-    // Cleanup on page leave
+    // Cleanup on page leave — send leave beacon + free resources
     window.addEventListener('beforeunload', () => {
-      if (state.channel) state.supabase?.removeChannel(state.channel);
-      if (state.heartbeatTimer) clearInterval(state.heartbeatTimer);
-      if (state.driftCheckTimer) clearInterval(state.driftCheckTimer);
-      if (countdownTimer) clearInterval(countdownTimer);
-      if (state.hls) state.hls.destroy();
-      clearTimeout(state.syncGuardTimer);
-      clearTimeout(state.syncDebounceTimer);
-      clearTimeout(state.bufferingTimer);
-      clearTimeout(state.pendingSeekBroadcast);
-      clearTimeout(state._driftCorrectionTimer);
-      clearTimeout(state._syncRevertTimer);
+      sendLeaveBeacon();
+      performCleanup();
+    });
+
+    // pagehide is more reliable than beforeunload on mobile (especially iOS Safari)
+    window.addEventListener('pagehide', (e) => {
+      sendLeaveBeacon();
+      performCleanup();
+    });
+
+    // When tab becomes hidden, send leave beacon (user might close tab)
+    // The server heartbeat timeout will handle actual cleanup
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        // Send a final heartbeat so the server knows we were alive
+        // If the tab is actually closed, beforeunload/pagehide will send leave
+        const url = `/api/party/rooms/${roomId}/sync`;
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(url);
+        }
+      }
     });
   }
 
