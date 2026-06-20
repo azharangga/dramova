@@ -82,28 +82,29 @@ async function fetchWithRetry(url: string, init: RequestInit, maxRetries = 2): P
 
 async function handleMedia(
   request: NextRequest,
-  { params }: { params: Promise<{ kind: "image" | "stream" | "subtitle" }> },
+  { params }: { params: Promise<{ kind: string }> },
   method: "GET" | "HEAD",
 ) {
   const { kind } = await params;
   if (!ALLOWED_KINDS.has(kind)) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const mediaKind = kind as "image" | "stream" | "subtitle";
   if (isDirectNavigation(request)) return NextResponse.json({ error: "Media endpoint tidak bisa dibuka langsung" }, { status: 403 });
 
   const userAgent = request.headers.get("user-agent") || "";
-  const url = readMediaToken(request.nextUrl.searchParams.get("token") || "", kind, userAgent);
+  const url = readMediaToken(request.nextUrl.searchParams.get("token") || "", mediaKind, userAgent);
   if (!url) return NextResponse.json({ error: "Invalid media token" }, { status: 403 });
 
   const upstream = await fetchWithRetry(url, {
     method,
     headers: upstreamHeaders(request),
-    cache: kind === "image" ? "force-cache" : "no-store",
+    cache: mediaKind === "image" ? "force-cache" : "no-store",
     signal: request.signal,
   });
-  const responseHeaders = copyResponseHeaders(upstream, kind);
+  const responseHeaders = copyResponseHeaders(upstream, mediaKind);
   if (method === "HEAD") return new Response(null, { status: upstream.status, headers: responseHeaders });
 
   const contentType = upstream.headers.get("content-type") || "";
-  if (kind === "stream" && (/mpegurl|m3u8/i.test(contentType) || /\.m3u8(\?|$)/i.test(url))) {
+  if (mediaKind === "stream" && (/mpegurl|m3u8/i.test(contentType) || /\.m3u8(\?|$)/i.test(url))) {
     const playlist = await upstream.text();
     const rewritten = playlist.split("\n").map((line) => rewritePlaylistLine(line, url, userAgent)).join("\n");
     responseHeaders.delete("content-length");
@@ -115,14 +116,14 @@ async function handleMedia(
 
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ kind: "image" | "stream" | "subtitle" }> },
+  context: { params: Promise<{ kind: string }> },
 ) {
   return handleMedia(request, context, "GET");
 }
 
 export async function HEAD(
   request: NextRequest,
-  context: { params: Promise<{ kind: "image" | "stream" | "subtitle" }> },
+  context: { params: Promise<{ kind: string }> },
 ) {
   return handleMedia(request, context, "HEAD");
 }
