@@ -99,6 +99,7 @@ export default function DomainMovedPage() {
         type="button"
         onClick={handleToggleTheme}
         aria-label={isDark ? "Aktifkan mode terang" : "Aktifkan mode gelap"}
+        data-tooltip-pos="left"
         className="grid h-10 w-10 place-items-center rounded-full border transition-all hover:opacity-80 active:scale-90"
         style={{
           position: "fixed",
