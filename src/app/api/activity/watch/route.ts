@@ -35,14 +35,16 @@ export async function POST(request: Request) {
       completed,
       last_watched_at: new Date().toISOString(),
     },
-    { onConflict: "user_id,content_type,platform,content_id,episode" },
+    { onConflict: "user_id,content_type,platform,content_id" },
   );
 
-  await supabase.from("user_activity").insert({
-    user_id: user.id,
-    activity_type: completed ? "video_completed" : "video_progress",
-    metadata: { contentType, platform, contentId, episode, currentTime, duration },
-  });
+  if (completed) {
+    await supabase.from("user_activity").insert({
+      user_id: user.id,
+      activity_type: "video_completed",
+      metadata: { contentType, platform, contentId, episode, currentTime, duration },
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }

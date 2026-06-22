@@ -1297,7 +1297,7 @@ if (state.currentQuality) {
   dom.video.addEventListener('timeupdate', () => {
     updateTimeControls();
     if (dom.video.paused) return;
-    if (!state.lastProgressSave || Date.now() - state.lastProgressSave > 5000) {
+    if (!state.lastProgressSave || Date.now() - state.lastProgressSave > 30000) {
       state.lastProgressSave = Date.now();
       writeProgress();
     }
