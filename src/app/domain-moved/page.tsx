@@ -93,17 +93,8 @@ export default function DomainMovedPage() {
   }, []);
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-12 bg-[var(--bg-base)]">
-      {/* Ambient gradient blobs */}
-      <div
-        className="pointer-events-none fixed inset-0 overflow-hidden"
-        aria-hidden="true"
-      >
-        <div className="absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-[var(--accent)] opacity-[0.04] blur-[120px]" />
-        <div className="absolute -bottom-40 -right-40 h-[500px] w-[500px] rounded-full bg-[var(--accent)] opacity-[0.05] blur-[100px]" />
-      </div>
-
-      {/* Theme toggle */}
+    <>
+      {/* Theme toggle — outside main to avoid flex/transform stacking context */}
       <button
         type="button"
         onClick={handleToggleTheme}
@@ -141,6 +132,16 @@ export default function DomainMovedPage() {
           )}
         </AnimatePresence>
       </button>
+
+      <main className="min-h-screen flex items-center justify-center px-4 py-12 bg-[var(--bg-base)]">
+        {/* Ambient gradient blobs */}
+        <div
+          className="pointer-events-none fixed inset-0 overflow-hidden"
+          aria-hidden="true"
+        >
+          <div className="absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-[var(--accent)] opacity-[0.04] blur-[120px]" />
+          <div className="absolute -bottom-40 -right-40 h-[500px] w-[500px] rounded-full bg-[var(--accent)] opacity-[0.05] blur-[100px]" />
+        </div>
 
       <motion.div
         className="relative z-10 flex w-full max-w-lg flex-col items-center gap-8 text-center"
@@ -350,5 +351,6 @@ export default function DomainMovedPage() {
         </motion.p>
       </motion.div>
     </main>
+    </>
   );
 }
