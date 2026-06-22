@@ -19,7 +19,7 @@
     watchCleanups.push(() => target.removeEventListener(eventName, handler, options));
   }
 
-  const D = window.DramSi;
+  const D = window.Dramova;
 
   // Parse from path: /shorts/watch/:platform/:id or /series/watch/:platform/:id
   const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -182,7 +182,7 @@
   }
 
   function progressKey() {
-    return `dramsi.watchProgress.${platform}.${dramaId}`;
+    return `dramova.watchProgress.${platform}.${dramaId}`;
   }
 
   function readProgress() {

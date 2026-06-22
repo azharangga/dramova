@@ -3,9 +3,9 @@
    Cache: static assets (cache-first), API (network-first), pages (stale-while-revalidate)
    ===================================================================== */
 
-const CACHE_NAME   = 'dramsi-v32';
-const STATIC_CACHE = 'dramsi-static-v26';
-const API_CACHE    = 'dramsi-api-v26';
+const CACHE_NAME   = 'dramova-v32';
+const STATIC_CACHE = 'dramova-static-v26';
+const API_CACHE    = 'dramova-api-v26';
 
 const STATIC_ASSETS = [
   '/',
@@ -135,8 +135,24 @@ async function networkFirst(request, cacheName, timeout = 5000) {
     const response = await fetch(request, { signal: controller.signal });
     clearTimeout(timer);
     if (response.ok) {
-      const cache = await caches.open(cacheName);
-      cache.put(request, response.clone());
+      // Jangan timpa cache lama jika respons API mengembalikan items kosong
+      // Ini memastikan data lama yang bagus tetap tersaji saat backend cold-start
+      const shouldCache = await (async () => {
+        if (!request.url.includes('/api/')) return true;
+        try {
+          const json = await response.clone().json();
+          const result = json?.result;
+          if (result && Array.isArray(result.items) && result.items.length === 0) {
+            return false;
+          }
+        } catch (_) { /* bukan JSON, cache saja */ }
+        return true;
+      })();
+
+      if (shouldCache) {
+        const cache = await caches.open(cacheName);
+        cache.put(request, response.clone());
+      }
     }
     return response;
   } catch (_) {

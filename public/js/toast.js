@@ -1,6 +1,6 @@
 /* =====================================================================
    Dramova · Toast bridge
-   Routes legacy window.DramSi.toast calls into the app shadcn/Radix toaster.
+   Routes legacy window.Dramova.toast calls into the app shadcn/Radix toaster.
    ===================================================================== */
 (function () {
   'use strict';
@@ -39,6 +39,6 @@
     loading(message, options) { return emit('loading', message, options); },
   };
 
-  window.DramSi = window.DramSi || {};
-  window.DramSi.toast = toast;
+  window.Dramova = window.Dramova || {};
+  window.Dramova.toast = toast;
 })();

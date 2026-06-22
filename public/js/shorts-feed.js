@@ -6,7 +6,7 @@
   'use strict';
   if (window.matchMedia('(min-width: 768px)').matches) return;
 
-  var D = window.DramSi;
+  var D = window.Dramova;
   var feed = document.getElementById('shortsFeed');
   if (!feed) return;
 

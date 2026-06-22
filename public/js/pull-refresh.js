@@ -1,6 +1,6 @@
 /* Mobile pull-to-refresh gesture. */
 (function () {
-  const D = window.DramSi;
+  const D = window.Dramova;
   const indicator = document.getElementById('pullRefreshIndicator');
   if (!indicator || !window.matchMedia('(max-width: 767px)').matches) return;
 

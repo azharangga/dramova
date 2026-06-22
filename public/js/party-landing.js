@@ -2,7 +2,7 @@
    Party Landing Page – Wizard-based create room, join, list rooms.
    ===================================================================== */
 (function () {
-  const D = window.DramSi;
+  const D = window.Dramova;
 
   // ── DOM refs ──────────────────────────────────────────────────────
   const dom = {

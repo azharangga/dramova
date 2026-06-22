@@ -3,9 +3,9 @@
    Cache: static assets (cache-first), API (network-first), pages (stale-while-revalidate)
    ===================================================================== */
 
-const CACHE_NAME   = 'dramsi-v31';
-const STATIC_CACHE = 'dramsi-static-v26';
-const API_CACHE    = 'dramsi-api-v25';
+const CACHE_NAME   = 'dramova-v31';
+const STATIC_CACHE = 'dramova-static-v26';
+const API_CACHE    = 'dramova-api-v25';
 
 const STATIC_ASSETS = [
   '/',

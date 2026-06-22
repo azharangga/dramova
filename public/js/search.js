@@ -1,6 +1,6 @@
 /* Search page · platform-aware streaming search with smart ranking. */
 (function () {
-  const D = window.DramSi;
+  const D = window.Dramova;
 
   const form = document.getElementById('searchForm');
   const input = document.getElementById('searchInput');

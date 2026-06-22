@@ -36,14 +36,14 @@ export default function Topbar() {
   }
 
   function handleThemeToggle() {
-    const dramova = window as typeof window & { DramSi?: { toggleTheme?: () => void } };
-    if (dramova.DramSi?.toggleTheme) {
-      dramova.DramSi.toggleTheme();
+    const dramova = window as typeof window & { Dramova?: { toggleTheme?: () => void } };
+    if (dramova.Dramova?.toggleTheme) {
+      dramova.Dramova.toggleTheme();
       return;
     }
     const root = document.documentElement;
     const next = root.getAttribute("data-theme") === "light" ? "dark" : "light";
-    localStorage.setItem("dramsi.theme", JSON.stringify(next));
+    localStorage.setItem("dramova.theme", JSON.stringify(next));
     root.setAttribute("data-theme", next);
     root.classList.toggle("light", next === "light");
     document.dispatchEvent(new CustomEvent("theme:changed", { detail: next }));

@@ -1,6 +1,6 @@
 /* Detail page · movie info before watching. */
 (function () {
-  const D = window.DramSi;
+  const D = window.Dramova;
 
   // Parse from path: /shorts/detail/:platform/:id or /series/detail/:platform/:id
   const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -60,7 +60,7 @@
       const isNew = isOngoing && numVal === currentEpisode;
 
       if (isDisabled) {
-        return `<a href="javascript:void(0)" onclick="window.DramSi?.toast?.warning?.('Episode Belum Rilis', { description: 'Episode ini belum tersedia.' }); event.preventDefault();" class="detail-ep-btn is-disabled" style="opacity:0.5; cursor:not-allowed;">${num}</a>`;
+        return `<a href="javascript:void(0)" onclick="window.Dramova?.toast?.warning?.('Episode Belum Rilis', { description: 'Episode ini belum tersedia.' }); event.preventDefault();" class="detail-ep-btn is-disabled" style="opacity:0.5; cursor:not-allowed;">${num}</a>`;
       }
       return `<a href="${watchUrl(num)}" class="detail-ep-btn relative" style="${isNew ? 'border: 1px solid rgba(245,158,11,0.5);' : ''}">
         ${num}

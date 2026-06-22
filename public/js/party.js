@@ -3,7 +3,7 @@
    Uses Supabase Realtime for sync via Broadcast + Presence.
    ===================================================================== */
 (function () {
-  const D = window.DramSi;
+  const D = window.Dramova;
   const supabaseUrl = document.querySelector('meta[name="supabase-url"]')?.content
     || (typeof process !== 'undefined' ? '' : window.__SUPABASE_URL__ || '');
 

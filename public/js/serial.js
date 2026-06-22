@@ -1,6 +1,6 @@
 /* Serial page · catalog with hero slider + full-catalog smart search. */
 (function () {
-  const D = window.DramSi;
+  const D = window.Dramova;
 
   const heroTrack = document.getElementById('serialHeroTrack');
   const heroDots = document.getElementById('serialHeroDots');

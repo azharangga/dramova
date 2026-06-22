@@ -1,6 +1,6 @@
 /* Library page · history & favorites from localStorage. */
 (function () {
-  const D = window.DramSi;
+  const D = window.Dramova;
   const grid    = document.getElementById('libraryGrid');
   const empty   = document.getElementById('libraryEmpty');
   const chips   = document.querySelectorAll('.lib-chip');

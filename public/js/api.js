@@ -61,7 +61,7 @@
 
   function lang(platform, override) {
     if (override) return override;
-    return (window.DramSi && window.DramSi.langFor(platform)) || 'id';
+    return (window.Dramova && window.Dramova.langFor(platform)) || 'id';
   }
 
   function query(extra = {}) {
@@ -173,6 +173,6 @@
     thaimovie: createMoviePlatform('thaimovie', 'Thai Movie'),
   };
 
-  window.DramSi = window.DramSi || {};
-  Object.assign(window.DramSi, { Platforms, unwrap, friendlyError });
+  window.Dramova = window.Dramova || {};
+  Object.assign(window.Dramova, { Platforms, unwrap, friendlyError });
 })();

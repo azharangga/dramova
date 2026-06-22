@@ -2,7 +2,7 @@
    Dramova · Shared UI helpers — CSS-variable aware (dark + light mode)
    ===================================================================== */
 (function () {
-  const D = window.DramSi;
+  const D = window.Dramova;
 
   // ── CSS variable helpers ────────────────────────────────────────
   function cssVar(name) {
@@ -259,7 +259,7 @@
     const card = img.closest('.poster-card');
     if (card && card.dataset.id && card.dataset.platform && !img.dataset.triedDetail) {
       img.dataset.triedDetail = 'true';
-      const D = window.DramSi;
+      const D = window.Dramova;
       const platform = card.dataset.platform;
       const id = card.dataset.id;
       if (D.Platforms && D.Platforms[platform] && D.Platforms[platform].detail) {
@@ -338,7 +338,7 @@
                data-fallbacks="${escapeAttr(fallbackData)}"
                data-fallback-index="0"
                data-placeholder="${escapeAttr(placeholder)}"
-               onerror="window.DramSi.loadPosterFallback(this)"
+               onerror="window.Dramova.loadPosterFallback(this)"
                onload="this.classList.add('is-loaded')"
                class="h-full w-full object-cover poster-card__img" />
           <span class="pointer-events-none absolute inset-0"
@@ -435,8 +435,8 @@
 
   // ── Share Sheet (TikTok-style) ────────────────────────────────
   function openShareSheet(title, url) {
-    document.getElementById('dramsiShareSheet')?.remove();
-    document.getElementById('dramsiShareBackdrop')?.remove();
+    document.getElementById('dramovaShareSheet')?.remove();
+    document.getElementById('dramovaShareBackdrop')?.remove();
 
     const encodedUrl = encodeURIComponent(url);
     const encodedTitle = encodeURIComponent(title || 'Dramova');
@@ -457,11 +457,11 @@
     const handleColor = isDark ? '#444' : '#ccc';
 
     const backdrop = document.createElement('div');
-    backdrop.id = 'dramsiShareBackdrop';
+    backdrop.id = 'dramovaShareBackdrop';
     backdrop.style.cssText = `position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.5);opacity:0;transition:opacity 0.2s ease;`;
 
     const sheet = document.createElement('div');
-    sheet.id = 'dramsiShareSheet';
+    sheet.id = 'dramovaShareSheet';
     sheet.style.cssText = `position:fixed;bottom:0;left:0;right:0;z-index:201;background:${bg};border-radius:16px 16px 0 0;padding:12px 16px calc(16px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform 0.3s cubic-bezier(.32,.72,.4,1);box-shadow:0 -4px 24px rgba(0,0,0,0.2);`;
     sheet.innerHTML = `
       <div style="width:36px;height:4px;border-radius:9999px;background:${handleColor};margin:0 auto 14px;"></div>

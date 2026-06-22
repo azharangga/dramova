@@ -1,6 +1,6 @@
 /* Discover page · unified catalog browser (shorts + serial). */
 (function () {
-  const D = window.DramSi;
+  const D = window.Dramova;
 
   const grid = document.getElementById('discoverGrid');
   const loadMoreBtn = document.getElementById('loadMoreBtn');

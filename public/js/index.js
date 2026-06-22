@@ -2,7 +2,7 @@
    Home page · hero carousel + horizontal rails per category.
    ===================================================================== */
 (function () {
-  const D = window.DramSi;
+  const D = window.Dramova;
 
   const heroTrack = document.getElementById('heroTrack');
   const heroDots = document.getElementById('heroDots');

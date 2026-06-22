@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const D = window.DramSi;
+  const D = window.Dramova;
 
   let deferredPrompt = null;
   let swRegistration = null;
@@ -123,8 +123,8 @@
   });
 
   // ── Expose ─────────────────────────────────────────────────────
-  window.DramSi = window.DramSi || {};
-  window.DramSi.pwa = {
+  window.Dramova = window.Dramova || {};
+  window.Dramova.pwa = {
     triggerInstall,
     isInstallable: () => !!deferredPrompt,
     isInstalled: () =>

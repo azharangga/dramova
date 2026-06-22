@@ -3,14 +3,14 @@
    ===================================================================== */
 (function () {
   const STORAGE = {
-    LANG:     'dramsi.lang',
-    PLATFORM: 'dramsi.platform',
-    LIBRARY:  'dramsi.library',
-    HISTORY:  'dramsi.history',
-    THEME:    'dramsi.theme',
-    HOME_CAT: 'dramsi.home_cat',
-    SHORTS_PLATFORM: 'dramsi.shorts_platform',
-    DISCOVER_CAT: 'dramsi.discover_cat',
+    LANG:     'dramova.lang',
+    PLATFORM: 'dramova.platform',
+    LIBRARY:  'dramova.library',
+    HISTORY:  'dramova.history',
+    THEME:    'dramova.theme',
+    HOME_CAT: 'dramova.home_cat',
+    SHORTS_PLATFORM: 'dramova.shorts_platform',
+    DISCOVER_CAT: 'dramova.discover_cat',
   };
 
   const LANGS = [
@@ -838,7 +838,7 @@
 
   function getPlatform() {
     // One-time migration: reset old default 'dramanova' to new default 'goodshort'
-    const MIGRATION_KEY = 'dramsi.migrated.platform.v2';
+    const MIGRATION_KEY = 'dramova.migrated.platform.v2';
     if (!Store.get(MIGRATION_KEY)) {
       const current = Store.get(STORAGE.PLATFORM);
       if (!current || current === 'dramanova') {
@@ -1023,8 +1023,8 @@
     });
   }
 
-  window.DramSi = window.DramSi || {};
-  Object.assign(window.DramSi, {
+  window.Dramova = window.Dramova || {};
+  Object.assign(window.Dramova, {
     LANGS, PLATFORMS: ACTIVE_PLATFORMS, ALL_PLATFORMS: PLATFORMS, SERIAL_PLATFORMS, MOVIE_PLATFORMS, STORAGE, Store,
     getLang, setLang, getPlatform, setPlatform, langFor,
     t, applyTranslations,

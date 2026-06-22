@@ -5,7 +5,7 @@
  * langsung pakai tanpa nunggu crawl ulang.
  */
 (function () {
-  const D = window.DramSi;
+  const D = window.Dramova;
   if (!D || !D.Platforms) return;
 
   // ── Shared global cache ───────────────────────────────────────────────────

@@ -207,8 +207,8 @@
   }
 
   // ── Expose API ─────────────────────────────────────────────────
-  window.DramSi = window.DramSi || {};
-  Object.assign(window.DramSi, {
+  window.Dramova = window.Dramova || {};
+  Object.assign(window.Dramova, {
     motion: {
       staggerGrid,
       animateHeroIn,

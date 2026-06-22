@@ -4,7 +4,7 @@
    ===================================================================== */
 (function () {
   'use strict';
-  var D = window.DramSi;
+  var D = window.Dramova;
 
   // ── Network quality detection ────────────────────────────────
   function getNetworkQuality() {
@@ -232,7 +232,7 @@
     }
   }
 
-  D = window.DramSi = window.DramSi || {};
+  D = window.Dramova = window.Dramova || {};
   Object.assign(D, {
     videoOpt: {
       getNetworkQuality: getNetworkQuality,

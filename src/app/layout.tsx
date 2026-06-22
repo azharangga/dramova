@@ -122,7 +122,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-          (function(){try{var t=JSON.parse(localStorage.getItem('dramsi.theme')||'"dark"');if(t==='light'){document.documentElement.classList.add('light');document.documentElement.setAttribute('data-theme','light');var m=document.querySelector('meta[name="theme-color"]');if(m)m.content='#f5f5f7';}}catch(_){}})();
+          (function(){try{var t=JSON.parse(localStorage.getItem('dramova.theme')||'"dark"');if(t==='light'){document.documentElement.classList.add('light');document.documentElement.setAttribute('data-theme','light');var m=document.querySelector('meta[name="theme-color"]');if(m)m.content='#f5f5f7';}}catch(_){}})();
         `,
           }}
         />
@@ -173,7 +173,7 @@ export default function RootLayout({
               // Back to top
               var btt=document.getElementById('backToTop');if(btt){var v=false,ht=null;window.addEventListener('scroll',function(){var s=window.scrollY>400;if(s&&!v){v=true;btt.classList.remove('hiding');btt.classList.add('visible');}else if(!s&&v){v=false;btt.classList.add('hiding');clearTimeout(ht);ht=setTimeout(function(){btt.classList.remove('visible','hiding');},260);}},{passive:true});btt.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});}
               // Theme toggle
-              var tb=document.getElementById('themeToggleBtn');if(tb){function si(){var d=document.documentElement.getAttribute('data-theme')!=='light';tb.setAttribute('aria-label',window.DramSi?.t?.(d?'theme.light':'theme.dark')||(d?'Aktifkan mode terang':'Aktifkan mode gelap'));}document.addEventListener('theme:changed',si);si();}
+              var tb=document.getElementById('themeToggleBtn');if(tb){function si(){var d=document.documentElement.getAttribute('data-theme')!=='light';tb.setAttribute('aria-label',window.Dramova?.t?.(d?'theme.light':'theme.dark')||(d?'Aktifkan mode terang':'Aktifkan mode gelap'));}document.addEventListener('theme:changed',si);si();}
               // Lang changed
               document.addEventListener('lang:changed',function(){window.lucide?.createIcons?.();});
               window.addEventListener('resize',function(){window.lucide?.createIcons?.();});
