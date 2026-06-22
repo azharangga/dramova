@@ -94,6 +94,10 @@ async function handleMedia(
   const url = readMediaToken(request.nextUrl.searchParams.get("token") || "", mediaKind, userAgent);
   if (!url) return NextResponse.json({ error: "Invalid media token" }, { status: 403 });
 
+  if (mediaKind === "stream" && !/\.m3u8(\?|$)/i.test(url)) {
+    return NextResponse.redirect(url, { status: 307 });
+  }
+
   const upstream = await fetchWithRetry(url, {
     method,
     headers: upstreamHeaders(request),

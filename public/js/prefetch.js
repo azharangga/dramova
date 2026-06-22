@@ -112,5 +112,5 @@
   window.__DRAMOVA_PREFETCH__ = { crawl, subscribe, getEntry, CACHE };
 
   // Mulai pre-crawl segera
-  prefetchAll();
+  // prefetchAll();
 })();
