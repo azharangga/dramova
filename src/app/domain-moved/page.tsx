@@ -99,8 +99,12 @@ export default function DomainMovedPage() {
         type="button"
         onClick={handleToggleTheme}
         aria-label={isDark ? "Aktifkan mode terang" : "Aktifkan mode gelap"}
-        className="fixed top-4 right-4 z-50 grid h-10 w-10 place-items-center rounded-full border transition-all hover:opacity-80 active:scale-90"
+        className="grid h-10 w-10 place-items-center rounded-full border transition-all hover:opacity-80 active:scale-90"
         style={{
+          position: "fixed",
+          top: 16,
+          right: 16,
+          zIndex: 50,
           borderColor: "var(--border-muted)",
           background: "var(--bg-raised)",
           color: "var(--text-primary)",
