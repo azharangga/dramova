@@ -3,9 +3,9 @@
    Cache: static assets (cache-first), API (network-first), pages (stale-while-revalidate)
    ===================================================================== */
 
-const CACHE_NAME   = 'dramova-v32';
+const CACHE_NAME   = 'dramova-v33';
 const STATIC_CACHE = 'dramova-static-v26';
-const API_CACHE    = 'dramova-api-v26';
+const API_CACHE    = 'dramova-api-v27';
 
 const STATIC_ASSETS = [
   '/',
@@ -76,7 +76,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   // Skip video/stream proxies — always network
-  if (url.pathname.startsWith('/proxy/')) return;
+  if (url.pathname.startsWith('/proxy/') || url.pathname.startsWith('/api/media/')) return;
 
   // API calls — network-first, fallback to cache
   if (url.pathname.startsWith('/api/serial/kdrama/video') || url.pathname.startsWith('/api/serial/kdrama/stream')) {
