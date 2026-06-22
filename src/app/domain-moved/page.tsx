@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/card";
 
 const NEW_DOMAIN = "dramova.app";
-const NEW_DOMAIN_URL = `${NEW_DOMAIN}`;
+const NEW_DOMAIN_URL = `https://${NEW_DOMAIN}`;
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -304,7 +304,7 @@ export default function DomainMovedPage() {
 
         </motion.div>
 
-        {/* Bookmark notice */}
+        {/* Official domain statement */}
         <motion.div custom={6} variants={fadeUp} className="w-full">
           <div className="flex items-start gap-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-raised)] px-4 py-3 text-left">
             <div className="mt-0.5 shrink-0 rounded-full bg-[var(--accent-muted)] p-1.5">
@@ -312,43 +312,24 @@ export default function DomainMovedPage() {
             </div>
             <div className="flex flex-col gap-1">
               <p className="text-sm font-semibold text-[var(--text-primary)]">
-                Perbarui Bookmark Anda
+                Domain Baru DRAMOVA
               </p>
               <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
-                Hapus bookmark lama yang mengarah ke{" "}
-                <span className="font-mono text-[var(--negative)]">
-                  dramova.vercel.app
+                <span className="font-mono font-semibold text-[var(--accent)]">
+                  {NEW_DOMAIN_URL}
                 </span>{" "}
-                dan ganti dengan alamat yang baru{" "}
-                <span className="font-mono text-[var(--accent)]">
-                  {NEW_DOMAIN}
-                </span>
-                . Domain lama ini akan dinonaktifkan dan tidak
-                akan lagi menerima pembaruan konten maupun fitur.
+                adalah satu-satunya domain resmi yang digunakan ke depannya.
+                Pastikan Anda selalu mengakses DRAMOVA melalui alamat ini untuk
+                mendapatkan layanan yang aman, terkini, dan lengkap. Domain lain
+                yang mengatasnamakan DRAMOVA tidak berafiliasi dengan kami.
               </p>
             </div>
           </div>
         </motion.div>
 
-        {/* Official domain statement */}
-        <motion.div custom={7} variants={fadeUp}>
-          <div className="rounded-lg border border-[var(--accent-muted)] bg-[color-mix(in_srgb,var(--accent-muted)_30%,transparent)] px-5 py-4">
-            <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
-              <span className="font-semibold text-[var(--accent)]">
-                {NEW_DOMAIN_URL}
-              </span>{" "}
-              adalah satu-satunya domain yang digunakan ke
-              depannya. Pastikan Anda selalu mengakses DRAMOVA melalui alamat
-              ini untuk mendapatkan layanan yang aman, terkini, dan lengkap.
-              Domain lain yang mengatasnamakan DRAMOVA tidak berafiliasi dengan
-              kami.
-            </p>
-          </div>
-        </motion.div>
-
         {/* Footer */}
         <motion.p
-          custom={8}
+          custom={7}
           variants={fadeUp}
           className="text-xs text-[var(--text-tertiary)]"
         >
