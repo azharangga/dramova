@@ -158,7 +158,7 @@ Salin berkas contoh konfigurasi lingkungan `.env` di direktori utama proyek, lal
 
 ```bash
 # Backend API Base URL
-API_BASE_URL=https://azharanggakusuma-dramova.hf.space
+API_BASE_URL=your_api_url
 
 # Supabase Configurations
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
