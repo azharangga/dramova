@@ -12,7 +12,7 @@ export function AuthBrandPanel() {
       </div>
       <div className="auth-brand-foot">
         <span />
-        <p>Platform Streaming Drama Drama Favoritmu</p>
+        <p>Platform Streaming Drama</p>
       </div>
     </aside>
   );
