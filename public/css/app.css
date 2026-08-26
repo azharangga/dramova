@@ -3140,7 +3140,7 @@ html.light #desktopFooter {
 }
 .footer-feature svg {
   flex: 0 0 auto;
-  color: var(--accent);
+  color: var(--text-primary);
 }
 .footer-tech {
   display: none;
@@ -3911,7 +3911,7 @@ html.light body {
 
 .footer-link:hover,
 .footer-feature i {
-  color: var(--accent) !important;
+  color: var(--text-primary) !important;
 }
 
 @media (max-width: 767px) {

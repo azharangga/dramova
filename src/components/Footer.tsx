@@ -24,7 +24,7 @@ export default function Footer() {
         </div>
         <div className="mt-8 flex items-center justify-between border-t pt-5" style={{ borderColor: "var(--border-color)" }}>
           <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>&copy; <span id="copyrightYear">2026</span> <span style={{ color: "var(--text-primary)" }}>Dramova</span>. All rights reserved.</p>
-          <p className="text-xs" style={{ color: "var(--text-tertiary)" }} data-i18n="footer.made_with">Dibuat dengan NextJS dan FastAPI.</p>
+          <p className="text-xs" style={{ color: "var(--text-tertiary)" }} data-i18n="footer.made_with">Dibuat oleh Azharangga Kusuma.</p>
         </div>
       </div>
     </footer>
