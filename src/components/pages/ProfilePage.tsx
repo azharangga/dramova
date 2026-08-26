@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
-import { Camera, Check, Eye, EyeOff, Loader2, Lock, Mail, Save, Shield, Trash2, User, X } from "lucide-react";
+import { Calendar, Camera, Check, Eye, EyeOff, Loader2, Lock, Mail, Save, Shield, Trash2, User, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/client";
@@ -42,6 +42,50 @@ export function ProfilePage() {
       setEmail(user.email);
     }
   }, [user]);
+
+  const [currentLang, setCurrentLang] = useState("id");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as unknown as { Dramova?: { getLang?: () => string } }).Dramova?.getLang) {
+      setCurrentLang((window as unknown as { Dramova: { getLang: () => string } }).Dramova.getLang() || "id");
+    }
+    const onLangChange = (e: CustomEvent<string>) => {
+      if (e.detail) setCurrentLang(e.detail);
+    };
+    window.addEventListener("lang:changed", onLangChange as EventListener);
+    return () => window.removeEventListener("lang:changed", onLangChange as EventListener);
+  }, []);
+
+  const joinedText = useMemo(() => {
+    if (!user?.createdAt) return null;
+    try {
+      const date = new Date(user.createdAt);
+      const localeMap: Record<string, string> = {
+        id: "id-ID",
+        en: "en-US",
+        ko: "ko-KR",
+        pt: "pt-BR",
+        th: "th-TH",
+      };
+      const prefixMap: Record<string, string> = {
+        id: "Bergabung sejak",
+        en: "Joined",
+        ko: "가입일",
+        pt: "Membro desde",
+        th: "เข้าร่วมเมื่อ",
+      };
+      const locale = localeMap[currentLang] || "id-ID";
+      const prefix = prefixMap[currentLang] || prefixMap.id;
+      const formatted = new Intl.DateTimeFormat(locale, {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }).format(date);
+      return `${prefix} ${formatted}`;
+    } catch {
+      return null;
+    }
+  }, [user?.createdAt, currentLang]);
 
   const checks = useMemo(() => [
     { id: "len", label: "Minimal 8 karakter", ok: newPassword.length >= 8 },
@@ -206,10 +250,21 @@ export function ProfilePage() {
         subtitle="Perbarui informasi profil, password, dan foto akun Dramova."
         subtitleI18n="profile.sub"
       />
+      {joinedText && (
+        <div className="page-header" style={{ paddingTop: 0, paddingBottom: "12px" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--text-tertiary)" }}>
+            <Calendar size={13} />
+            <span>{joinedText}</span>
+          </div>
+        </div>
+      )}
 
       <div className="profile-shell">
         <section className="profile-section">
-          <div><h2>Profil</h2><p>Informasi dasar akun yang ditampilkan di aplikasi.</p></div>
+          <div>
+            <h2>Profil</h2>
+            <p>Informasi dasar akun yang ditampilkan di aplikasi.</p>
+          </div>
           <form onSubmit={saveProfile} className="profile-form">
             <label className="profile-avatar-row">
               <span>Foto Profil</span>
@@ -218,7 +273,10 @@ export function ProfilePage() {
                   {user.avatarUrl ? <img src={user.avatarUrl} alt={user.name} /> : <User size={28} />}
                   <b>{uploadingAvatar ? <Loader2 className="animate-spin" size={18} /> : <Camera size={18} />}</b>
                 </button>
-                <button type="button" className="profile-secondary-btn" onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}>Ganti Foto</button>
+                <button type="button" className="profile-secondary-btn" onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar}>
+                  <Camera size={14} />
+                  <span>Ganti Foto</span>
+                </button>
                 <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={uploadAvatar} />
               </div>
             </label>

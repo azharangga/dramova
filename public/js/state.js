@@ -766,6 +766,7 @@
 
   Object.keys(I18N).forEach((code) => {
     Object.assign(I18N[code], {
+      'nav.party': code === 'id' ? 'Nobar' : (code === 'ko' ? '같이보기' : (code === 'pt' ? 'Assistir Junto' : (code === 'th' ? 'ดูด้วยกัน' : 'Watch Party'))),
       'nav.movie': code === 'id' ? 'Movie' : 'Movie',
       'discover.cat_movie_sub': code === 'id' ? 'Film Asia pilihan' : 'Selected Asian movies',
       'movie.search_placeholder': code === 'id' ? 'Cari judul movie...' : 'Search movie titles...',
@@ -782,6 +783,7 @@
       'profile.kicker': code === 'id' ? 'Pengaturan' : 'Settings',
       'profile.title': code === 'id' ? 'Kelola Akun' : 'Account Settings',
       'profile.sub': code === 'id' ? 'Perbarui informasi profil, password, dan foto akun Dramova.' : 'Update your Dramova profile, password, and account photo.',
+      'profile.joined_prefix': code === 'id' ? 'Bergabung sejak' : (code === 'ko' ? '가입일' : (code === 'pt' ? 'Membro desde' : (code === 'th' ? 'เข้าร่วมเมื่อ' : 'Joined'))),
     });
   });
 

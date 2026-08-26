@@ -5,6 +5,7 @@ export type AuthUser = {
   name: string;
   email: string;
   avatarUrl: string | null;
+  createdAt?: string | null;
 };
 
 export function mapAuthUser(user: User | null): AuthUser | null {
@@ -15,5 +16,6 @@ export function mapAuthUser(user: User | null): AuthUser | null {
     name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Pengguna",
     email: user.email || "",
     avatarUrl: user.user_metadata?.avatar_url || null,
+    createdAt: user.created_at || null,
   };
 }
