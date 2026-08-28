@@ -8,5 +8,16 @@ export async function GET() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return NextResponse.json({ user: mapAuthUser(user) });
+  if (!user) {
+    return NextResponse.json({ user: null });
+  }
+
+  // Fetch profile to get role and ban status
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("name, email, avatar_url, role, is_banned, created_at, updated_at")
+    .eq("id", user.id)
+    .single();
+
+  return NextResponse.json({ user: mapAuthUser(user, profile) });
 }

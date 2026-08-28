@@ -47,7 +47,7 @@ export function LoginPage() {
     }
 
     setLoading(true);
-    const { error } = await login(cleanEmail, password, turnstileToken);
+    const { user: loggedInUser, error } = await login(cleanEmail, password, turnstileToken);
     if (error) {
       toast.error("Login Gagal", { description: error });
       resetTurnstile(setTurnstileToken, setTurnstileKey);
@@ -55,7 +55,10 @@ export function LoginPage() {
       return;
     }
     toast.success("Berhasil Masuk", { description: "Selamat datang kembali!" });
-    router.push(next);
+
+    // If superuser and no specific deep-link destination was provided, route directly to /dashboard
+    const targetPath = next !== "/" ? next : loggedInUser?.role === "superuser" ? "/dashboard" : "/";
+    router.push(targetPath);
     router.refresh();
   }
 

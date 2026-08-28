@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -15,7 +17,3 @@
   --destructive-foreground: #fef2f2;
   --border: #27272a;
 }
-
-/* ── Original Dramova app.css loaded from public/css/app.css via <link> in layout ── */
-/* Tailwind utilities are available for components, but the main styling
-   comes from the original CSS file to preserve 100% UI fidelity. */

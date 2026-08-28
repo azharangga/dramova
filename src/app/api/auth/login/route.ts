@@ -17,5 +17,13 @@ export async function POST(request: Request) {
   });
 
   if (error) return NextResponse.json({ error: authError(error.message) }, { status: 400 });
-  return NextResponse.json({ user: mapAuthUser(data.user) });
+
+  // Fetch profile to get role and ban status
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("name, email, avatar_url, role, is_banned, created_at, updated_at")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  return NextResponse.json({ user: mapAuthUser(data.user, profile) });
 }

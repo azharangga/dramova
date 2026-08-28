@@ -9,8 +9,8 @@ type AuthContextValue = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string, turnstileToken: string) => Promise<{ error?: string }>;
-  register: (name: string, email: string, password: string, turnstileToken: string) => Promise<{ error?: string }>;
+  login: (email: string, password: string, turnstileToken: string) => Promise<{ user?: AuthUser | null; error?: string }>;
+  register: (name: string, email: string, password: string, turnstileToken: string) => Promise<{ user?: AuthUser | null; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 };
@@ -66,9 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(mapAuthUser(session?.user ?? null));
-      setIsLoading(false);
+    } = supabase.auth.onAuthStateChange((_event, _session) => {
+      refreshUser();
     });
     return () => subscription.unsubscribe();
   }, [refreshUser, supabase]);
@@ -83,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(result.user ?? null);
       setIsLoading(false);
       await trackActivity({ type: "login", metadata: { email } });
-      return {};
+      return { user: result.user ?? null };
     },
     [refreshUser, supabase],
   );
@@ -99,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(result.user ?? null);
       setIsLoading(false);
       await trackActivity({ type: "register", metadata: { email } });
-      return {};
+      return { user: result.user ?? null };
     },
     [refreshUser, supabase],
   );

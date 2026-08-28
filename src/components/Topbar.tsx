@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LogOut, User, History } from "lucide-react";
+import { LogOut, User, History, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
@@ -86,6 +86,11 @@ export default function Topbar() {
                 <strong>{user?.name || "Pengguna"}</strong>
                 <span>{user?.email || ""}</span>
               </div>
+              {user?.role === "superuser" && (
+                <a href="/dashboard" onClick={() => setProfileOpen(false)} style={{ color: "var(--accent)", fontWeight: 600 }}>
+                  <ShieldCheck size={15} />Dashboard Admin
+                </a>
+              )}
               <a href="/profile" onClick={() => setProfileOpen(false)}><User size={15} />Profile</a>
               <a href="/history" onClick={() => setProfileOpen(false)}><History size={15} />Riwayat</a>
               <button onClick={handleLogout}><LogOut size={15} />Logout</button>
