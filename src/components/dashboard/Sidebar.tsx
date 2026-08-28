@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
@@ -106,14 +107,15 @@ export default function Sidebar({ className, onCloseMobile }: SidebarProps) {
   ];
 
   return (
-    <aside
-      className={cn(
-        "flex h-full flex-col transition-all duration-300 ease-in-out border-r select-none shrink-0 font-sans",
-        "bg-white dark:bg-[#161618] border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100",
-        isCollapsed ? "w-[68px]" : "w-[240px]",
-        className
-      )}
-    >
+    <TooltipProvider delayDuration={200}>
+      <aside
+        className={cn(
+          "flex h-full flex-col transition-all duration-300 ease-in-out border-r select-none shrink-0 font-sans",
+          "bg-white dark:bg-[#161618] border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100",
+          isCollapsed ? "w-[68px]" : "w-[240px]",
+          className
+        )}
+      >
       {/* 1. Header: Logo Only (icon.png when collapsed, logo.png when expanded - NO INVERT CLASS) */}
       <div
         className={cn(
@@ -253,6 +255,7 @@ export default function Sidebar({ className, onCloseMobile }: SidebarProps) {
           )}
         </Link>
       </div>
-    </aside>
+      </aside>
+    </TooltipProvider>
   );
 }
