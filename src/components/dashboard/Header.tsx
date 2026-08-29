@@ -216,25 +216,18 @@ export default function DashboardHeader({ onToggleSidebar }: HeaderProps) {
           </DropdownMenu>
 
           {/* 3. Theme Toggle (1-Click icon button) */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={toggleTheme}
-                aria-label={t("toggleTheme", "Ubah Tema")}
-                className="h-8 w-8 grid place-items-center rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
-              >
-                {resolvedTheme === "dark" ? (
-                  <Sun className="h-4 w-4 text-zinc-300 hover:text-white" strokeWidth={1.75} />
-                ) : (
-                  <Moon className="h-4 w-4 text-zinc-700 hover:text-zinc-900" strokeWidth={1.75} />
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {resolvedTheme === "dark" ? t("light", "Light Mode") : t("dark", "Dark Mode")}
-            </TooltipContent>
-          </Tooltip>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={t("toggleTheme", "Ubah Tema")}
+            className="h-8 w-8 grid place-items-center rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+          >
+            {resolvedTheme === "dark" ? (
+              <Sun className="h-4 w-4 text-zinc-300 hover:text-white" strokeWidth={1.75} />
+            ) : (
+              <Moon className="h-4 w-4 text-zinc-700 hover:text-zinc-900" strokeWidth={1.75} />
+            )}
+          </button>
 
           <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800 mx-0.5" />
 

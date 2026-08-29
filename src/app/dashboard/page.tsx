@@ -19,6 +19,7 @@ import {
   DashboardPageHeader,
   DashboardStatCard,
   DashboardBadge,
+  DashboardEmptyState,
   ShimmerBar,
   StatusDot,
   InteractiveAreaChart,
@@ -88,7 +89,7 @@ export default function DashboardOverviewPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [cleaningUp, setCleaningUp] = useState(false);
-  const { t } = useAdmin();
+  const { t, language } = useAdmin();
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(0); // 0 means "All Years"
@@ -440,11 +441,11 @@ export default function DashboardOverviewPage() {
         <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] shadow-2xs overflow-hidden">
           <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800">
             <div>
-              <div className="text-[11px] font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
-                {t("watchParties", "Watch Party")}
+              <div className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400">
+                {t("watchParties", "Nobar")}
               </div>
               <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mt-0.5">
-                Watch Party Terkini
+                {t("recentWatchParties", "Nobar Terkini")}
               </div>
             </div>
             <Link
@@ -470,8 +471,12 @@ export default function DashboardOverviewPage() {
                 ))}
               </div>
             ) : (stats?.latestRooms || []).length === 0 ? (
-              <div className="p-8 text-center text-xs text-zinc-500 dark:text-zinc-400">
-                Belum ada aktivitas Watch Party
+              <div className="py-8 px-4">
+                <DashboardEmptyState
+                  icon={<Tv className="h-8 w-8 mx-auto" />}
+                  title={language === "id" ? "Room Nobar Kosong" : "No Watch Party Rooms"}
+                  description={t("noWatchPartyActivity", "Belum ada aktivitas Nonton Bareng")}
+                />
               </div>
             ) : (
               (stats?.latestRooms || []).slice(0, 5).map((r, index) => (
@@ -496,7 +501,7 @@ export default function DashboardOverviewPage() {
                     <DashboardBadge
                       variant={r.is_active ? "success" : "neutral"}
                       size="sm"
-                      dot={r.is_active}
+                      dot={false}
                     >
                       {r.is_active ? "Live" : "Selesai"}
                     </DashboardBadge>

@@ -101,7 +101,7 @@ interface WatchPartyRoom {
 }
 
 export default function WatchPartiesManagementPage() {
-  const { t } = useAdmin();
+  const { t, language } = useAdmin();
   const [rooms, setRooms] = useState<WatchPartyRoom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -340,7 +340,7 @@ export default function WatchPartiesManagementPage() {
                     <DashboardEmptyState
                       icon={<Tv className="h-8 w-8 mx-auto" />}
                       title="Room Nobar Kosong"
-                      description="Tidak ada data Watch Party yang aktif atau sesuai dengan filter pencarian."
+                      description={language === "id" ? "Tidak ada data Nobar yang aktif atau sesuai dengan filter pencarian." : "No active Watch Party matches the search filter."}
                     />
                   </TableCell>
                 </TableRow>
@@ -408,7 +408,7 @@ export default function WatchPartiesManagementPage() {
 
                       <TableCell className="py-3 px-4">
                         {r.is_active ? (
-                          <DashboardBadge variant="success" size="sm" dot>
+                          <DashboardBadge variant="success" size="sm">
                             Live
                           </DashboardBadge>
                         ) : (
@@ -493,7 +493,7 @@ export default function WatchPartiesManagementPage() {
                   <span className="text-[10px] text-zinc-600 dark:text-zinc-400 uppercase font-semibold">Status Room</span>
                   <div className="mt-1">
                     {selectedRoom.is_active ? (
-                      <DashboardBadge variant="success" size="sm" dot>Sedang Aktif</DashboardBadge>
+                      <DashboardBadge variant="success" size="sm">Sedang Aktif</DashboardBadge>
                     ) : (
                       <DashboardBadge variant="neutral" size="sm">Nonaktif</DashboardBadge>
                     )}
@@ -553,7 +553,9 @@ export default function WatchPartiesManagementPage() {
           <AlertDialogHeader>
             <div className="flex items-center gap-2 text-[#ff2201] mb-1.5">
               <AlertTriangle className="h-5 w-5" />
-              <AlertDialogTitle className="text-base font-bold">Tutup Room Watch Party</AlertDialogTitle>
+              <AlertDialogTitle className="text-base font-bold">
+                {language === "id" ? "Tutup Room Nobar" : "Close Watch Party Room"}
+              </AlertDialogTitle>
             </div>
             <AlertDialogDescription className="text-xs text-zinc-600 dark:text-zinc-400">
               Apakah Anda yakin ingin menghentikan room <b className="text-zinc-900 dark:text-zinc-100">#{roomToDeactivate?.code} ({roomToDeactivate?.title})</b>? Seluruh partisipan di dalam room akan otomatis terputus dari sesi nobar.

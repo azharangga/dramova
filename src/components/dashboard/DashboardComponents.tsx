@@ -71,7 +71,7 @@ export function DashboardStatCard({
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
+        <span className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400">
           {label}
         </span>
         {icon && <span className="text-zinc-500 dark:text-zinc-400">{icon}</span>}
@@ -243,11 +243,11 @@ export function InteractiveAreaChart({
   // Prevent divide by zero
   const maxValue = Math.max(...data.map((d) => d.value), 5);
   const width = 600;
-  const height = 180;
+  const height = 195;
   const paddingLeft = 35;
-  const paddingRight = 15;
+  const paddingRight = 20;
   const paddingTop = 15;
-  const paddingBottom = 20;
+  const paddingBottom = 35;
 
   const chartWidth = width - paddingLeft - paddingRight;
   const chartHeight = height - paddingTop - paddingBottom;
@@ -279,7 +279,7 @@ export function InteractiveAreaChart({
     <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] p-5 shadow-2xs overflow-hidden flex flex-col justify-between h-full">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div>
-          <span className="text-[11px] font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
+          <span className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400">
             {title}
           </span>
           {subtitle && (
@@ -295,10 +295,10 @@ export function InteractiveAreaChart({
               value={selectedYear.toString()}
               onValueChange={(val) => onSelectYear(Number(val))}
             >
-              <SelectTrigger className="h-7 w-[120px] text-[11px] font-medium bg-zinc-50 dark:bg-zinc-800/80 border-zinc-200 dark:border-zinc-700">
+              <SelectTrigger className="h-8 w-[120px] text-[11px] font-bold bg-[var(--bg-raised)] dark:bg-[#18181b] border-zinc-200 dark:border-zinc-800 rounded-full px-3 transition hover:opacity-80">
                 <SelectValue placeholder="Pilih Tahun" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] rounded-xl shadow-md p-1">
                 <SelectItem value="0">Semua Tahun</SelectItem>
                 {years.map((y) => (
                   <SelectItem key={y} value={y.toString()}>
@@ -308,20 +308,13 @@ export function InteractiveAreaChart({
               </SelectContent>
             </Select>
           )}
-
-          {hoveredIdx !== null && (
-            <div className="text-xs font-mono bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100">
-              <span className="text-zinc-500 dark:text-zinc-400">{data[hoveredIdx].label}:</span>{" "}
-              <span className="font-bold text-[#2BA641]">{data[hoveredIdx].value}</span> sesi
-            </div>
-          )}
         </div>
       </div>
 
-      <div className="relative w-full pt-2 flex-1 flex flex-col justify-center">
+      <div className="relative w-full flex-1 flex flex-col justify-center">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="w-full h-44 sm:h-52 overflow-visible"
+          className="w-full h-48 sm:h-56 overflow-visible"
         >
           <defs>
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
@@ -395,27 +388,68 @@ export function InteractiveAreaChart({
               />
             </g>
           ))}
-        </svg>
 
-        {/* X Axis Labels under SVG */}
-        <div
-          className="flex justify-between pt-3 text-[10px] sm:text-[11px] font-mono text-zinc-400 dark:text-zinc-500 border-t border-zinc-100 dark:border-zinc-800/60 mt-1"
-          style={{ paddingLeft: `${(paddingLeft / width) * 100}%`, paddingRight: `${(paddingRight / width) * 100}%` }}
-        >
-          {data.map((d, i) => (
-            <span
+          {/* SVG Tooltip on Hover */}
+          {hoveredIdx !== null && (
+            <g
+              transform={`translate(${
+                points[hoveredIdx].x > width - 70
+                  ? points[hoveredIdx].x - 65
+                  : points[hoveredIdx].x < 70
+                  ? points[hoveredIdx].x + 5
+                  : points[hoveredIdx].x - 30
+              }, ${
+                points[hoveredIdx].y - 35 < 5
+                  ? points[hoveredIdx].y + 12
+                  : points[hoveredIdx].y - 35
+              })`}
+              className="pointer-events-none transition-all duration-150"
+            >
+              <rect
+                width="60"
+                height="26"
+                rx="4"
+                className="fill-zinc-900/90 dark:fill-zinc-100/95 stroke-zinc-700/50 shadow-md"
+              />
+              <text
+                x="30"
+                y="11"
+                textAnchor="middle"
+                className="fill-zinc-300 dark:fill-zinc-600 text-[9px] font-mono select-none"
+              >
+                {points[hoveredIdx].label}
+              </text>
+              <text
+                x="30"
+                y="21"
+                textAnchor="middle"
+                className="fill-white dark:fill-zinc-900 text-[10px] font-bold font-mono select-none"
+              >
+                {points[hoveredIdx].value} sesi
+              </text>
+            </g>
+          )}
+
+          {/* X Axis Labels inside SVG for exact alignment */}
+          {points.map((p, i) => (
+            <text
               key={i}
+              x={p.x}
+              y={height - 8}
+              textAnchor="middle"
               className={cn(
-                "cursor-pointer transition-colors text-center truncate px-0.5",
-                hoveredIdx === i ? "text-[#2BA641] font-bold" : ""
+                "cursor-pointer transition-colors text-[11px] font-mono select-none",
+                hoveredIdx === i
+                  ? "fill-[#2BA641] font-bold"
+                  : "fill-zinc-400 dark:fill-zinc-500"
               )}
               onMouseEnter={() => setHoveredIdx(i)}
               onMouseLeave={() => setHoveredIdx(null)}
             >
-              {d.label}
-            </span>
+              {p.label}
+            </text>
           ))}
-        </div>
+        </svg>
       </div>
     </div>
   );
@@ -469,7 +503,7 @@ export function InteractiveDonutChart({
   return (
     <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] p-5 shadow-2xs flex flex-col justify-between h-full">
       <div>
-        <span className="text-[11px] font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
+        <span className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400">
           {title}
         </span>
         {subtitle && (

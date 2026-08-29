@@ -459,11 +459,11 @@ export default function UsersManagementPage() {
                     </TableCell>
                     <TableCell className="py-3 px-4">
                       {u.is_banned ? (
-                        <DashboardBadge variant="danger" size="sm" dot>
+                        <DashboardBadge variant="danger" size="sm">
                           Terblokir
                         </DashboardBadge>
                       ) : (
-                        <DashboardBadge variant="success" size="sm" dot>
+                        <DashboardBadge variant="success" size="sm">
                           Aktif
                         </DashboardBadge>
                       )}
@@ -732,7 +732,7 @@ export default function UsersManagementPage() {
                       {detailUser.profile.role === "superuser" ? "Super User" : "Pengguna"}
                     </DashboardBadge>
                     {detailUser.profile.is_banned && (
-                      <DashboardBadge variant="danger" size="sm" dot>
+                      <DashboardBadge variant="danger" size="sm">
                         Diblokir
                       </DashboardBadge>
                     )}
@@ -822,7 +822,7 @@ export default function UsersManagementPage() {
                           <DashboardBadge
                             variant={room.is_active ? "success" : "neutral"}
                             size="sm"
-                            dot={room.is_active}
+                            dot={false}
                           >
                             {room.is_active ? "Live" : "Selesai"}
                           </DashboardBadge>
