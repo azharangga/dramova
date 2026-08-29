@@ -264,7 +264,7 @@ export default function DashboardHeader({ onToggleSidebar }: HeaderProps) {
                   <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                     {user?.name || "Super Admin"}
                   </p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate lowercase">
                     {user?.email || "admin@dramova.site"}
                   </p>
                 </div>

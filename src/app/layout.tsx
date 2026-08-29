@@ -122,7 +122,26 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-          (function(){try{var t=JSON.parse(localStorage.getItem('dramova.theme')||'"dark"');if(t==='light'){document.documentElement.classList.add('light');document.documentElement.setAttribute('data-theme','light');var m=document.querySelector('meta[name="theme-color"]');if(m)m.content='#f5f5f7';}}catch(_){}})();
+          (function(){try{
+            var isDashboard = window.location.pathname.startsWith('/dashboard');
+            var adminTheme = localStorage.getItem('dramova_admin_theme');
+            var mainTheme = JSON.parse(localStorage.getItem('dramova.theme')||'"dark"');
+            var effectiveTheme = isDashboard ? (adminTheme || 'light') : mainTheme;
+            if (effectiveTheme === 'system') {
+              effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            if(effectiveTheme === 'light'){
+              document.documentElement.classList.add('light');
+              document.documentElement.classList.remove('dark');
+              document.documentElement.setAttribute('data-theme','light');
+              var m=document.querySelector('meta[name="theme-color"]');
+              if(m)m.content='#f5f5f7';
+            } else {
+              document.documentElement.classList.add('dark');
+              document.documentElement.classList.remove('light');
+              document.documentElement.setAttribute('data-theme','dark');
+            }
+          }catch(_){}})();
         `,
           }}
         />

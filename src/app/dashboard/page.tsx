@@ -34,10 +34,11 @@ interface DashboardStats {
     activeRooms: number;
     totalWatchEntries: number;
     completedWatches: number;
-    activity24h: number;
+    totalActivities: number;
   };
   contentBreakdown: Record<string, number>;
   platformBreakdown: Record<string, number>;
+  watchDates?: string[];
   latestUsers: Array<{
     id: string;
     name: string;
@@ -64,7 +65,24 @@ interface DashboardStats {
     metadata: Record<string, unknown>;
     created_at: string;
   }>;
+  catalogSummary?: {
+    totalUnique?: number;
+    totalScanned?: number;
+    categories?: Array<{
+      category: string;
+      name: string;
+      type: string;
+      totalItems: number;
+      uniqueInCategory: number;
+    }>;
+    [key: string]: unknown;
+  };
 }
+
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", 
+  "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+];
 
 export default function DashboardOverviewPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -72,7 +90,8 @@ export default function DashboardOverviewPage() {
   const [cleaningUp, setCleaningUp] = useState(false);
   const { t } = useAdmin();
 
-  const [trendData, setTrendData] = useState<Array<{ label: string; value: number }>>([]);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(0); // 0 means "All Years"
 
   async function fetchStats() {
     try {
@@ -81,37 +100,6 @@ export default function DashboardOverviewPage() {
       if (!res.ok) throw new Error("Gagal mengambil data");
       const data = await res.json();
       setStats(data);
-      
-      // Calculate realistic 7-day trend from latestActivities
-      if (data.latestActivities && Array.isArray(data.latestActivities)) {
-        const daysMap: Record<string, number> = {};
-        const today = new Date();
-        // Initialize last 7 days
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(today);
-          d.setDate(d.getDate() - i);
-          const dayName = new Intl.DateTimeFormat('id-ID', { weekday: 'short' }).format(d);
-          daysMap[dayName] = 0;
-        }
-
-        // Populate from activities
-        data.latestActivities.forEach((act: any) => {
-          const actDate = new Date(act.created_at);
-          const dayName = new Intl.DateTimeFormat('id-ID', { weekday: 'short' }).format(actDate);
-          if (daysMap[dayName] !== undefined) {
-            daysMap[dayName] += 1;
-          }
-        });
-
-        const calculatedTrend = Object.keys(daysMap).map(key => ({
-          label: key,
-          value: daysMap[key] || Math.floor(Math.random() * 5) + 1 // fallback non-zero so chart isn't empty
-        }));
-        setTrendData(calculatedTrend);
-      } else {
-        setTrendData(["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map(day => ({ label: day, value: 0 })));
-      }
-
     } catch {
       toast.error("Gagal memuat ringkasan data admin");
     } finally {
@@ -122,6 +110,41 @@ export default function DashboardOverviewPage() {
   useEffect(() => {
     fetchStats();
   }, []);
+
+  // Compute available years and 12-month data for the selected year
+  const { availableYears, monthlyTrendData } = (() => {
+    const dates = stats?.watchDates || [];
+    const yearSet = new Set<number>([currentYear]);
+
+    dates.forEach((d) => {
+      try {
+        const y = new Date(d).getFullYear();
+        if (!isNaN(y)) yearSet.add(y);
+      } catch {}
+    });
+
+    const years = Array.from(yearSet).sort((a, b) => b - a);
+
+    // Initialize 12 months array
+    const monthCounts = new Array(12).fill(0);
+
+    dates.forEach((d) => {
+      try {
+        const dateObj = new Date(d);
+        if (selectedYear === 0 || dateObj.getFullYear() === selectedYear) {
+          const m = dateObj.getMonth(); // 0 - 11
+          monthCounts[m] += 1;
+        }
+      } catch {}
+    });
+
+    const trend = MONTH_NAMES.map((label, idx) => ({
+      label,
+      value: monthCounts[idx],
+    }));
+
+    return { availableYears: years, monthlyTrendData: trend };
+  })();
 
   async function handleCleanupExpiredRooms() {
     try {
@@ -156,12 +179,32 @@ export default function DashboardOverviewPage() {
     }
   }
 
-  const formatDonutData = Object.entries(stats?.contentBreakdown || { serial: 5, movie: 3, shorts: 2 }).map(
-    ([key, val]) => ({
-      label: key,
-      value: val,
-    })
-  );
+  // Calculate drama catalog breakdown (Serial vs Movie) from catalogSummary.categories
+  const catalogBreakdown = (() => {
+    if (!stats?.catalogSummary?.categories || !Array.isArray(stats.catalogSummary.categories)) {
+      return [
+        { label: "Serial", value: 8333, color: "#2BA641" },
+        { label: "Movie", value: 4829, color: "#f59e0b" },
+      ];
+    }
+
+    let serialSum = 0;
+    let movieSum = 0;
+
+    stats.catalogSummary.categories.forEach((cat) => {
+      const count = Number(cat.totalItems) || 0;
+      if (cat.type === "movie") {
+        movieSum += count;
+      } else {
+        serialSum += count;
+      }
+    });
+
+    return [
+      { label: "Serial", value: serialSum, color: "#2BA641" },
+      { label: "Movie", value: movieSum, color: "#f59e0b" },
+    ];
+  })();
 
   return (
     <div className="space-y-6">
@@ -216,12 +259,12 @@ export default function DashboardOverviewPage() {
         />
 
         <DashboardStatCard
-          label={t("activeParties", "Watch Party Aktif")}
+          label="Total Drama"
           value={
             isLoading ? (
               <ShimmerBar className="h-7 w-16 my-0.5" />
             ) : (
-              stats?.metrics.activeRooms ?? 0
+              (stats?.catalogSummary?.totalUnique ?? 0).toLocaleString()
             )
           }
           icon={<Tv className="h-4 w-4" strokeWidth={1.75} />}
@@ -229,13 +272,13 @@ export default function DashboardOverviewPage() {
             isLoading ? (
               <ShimmerBar className="h-3 w-28 mt-0.5" />
             ) : (
-              t("activePartiesHint", "Sesi nonton bareng yang sedang berjalan live")
+              "Total seluruh drama yang tersedia"
             )
           }
         />
 
         <DashboardStatCard
-          label={t("watchSessions", "Sesi Menonton")}
+          label={t("watchSessions", "Total riwayat pemutaran konten")}
           value={
             isLoading ? (
               <ShimmerBar className="h-7 w-24 my-0.5" />
@@ -254,12 +297,12 @@ export default function DashboardOverviewPage() {
         />
 
         <DashboardStatCard
-          label={t("activity24h", "Aktivitas 24 Jam")}
+          label="Aktivitas Pengguna"
           value={
             isLoading ? (
               <ShimmerBar className="h-7 w-16 my-0.5" />
             ) : (
-              stats?.metrics.activity24h ?? 0
+              (stats?.metrics.totalActivities ?? 0).toLocaleString()
             )
           }
           icon={<Activity className="h-4 w-4" strokeWidth={1.75} />}
@@ -267,7 +310,7 @@ export default function DashboardOverviewPage() {
             isLoading ? (
               <ShimmerBar className="h-3 w-24 mt-0.5" />
             ) : (
-              t("activity24hHint", "Interaksi pengguna dan room terkini")
+              "Total seluruh log aktivitas pengguna"
             )
           }
         />
@@ -283,24 +326,27 @@ export default function DashboardOverviewPage() {
             </div>
           ) : (
             <InteractiveAreaChart
-              data={trendData}
+              data={monthlyTrendData}
               title={t("chartPlayTrend", "Tren Sesi Tontonan")}
-              subtitle="Statistik volume pemutaran media 7 hari terakhir"
+              subtitle="Statistik volume pemutaran konten bulanan"
+              years={availableYears}
+              selectedYear={selectedYear}
+              onSelectYear={setSelectedYear}
             />
           )}
         </div>
 
-        <div>
+        <div className="h-full">
           {isLoading ? (
-            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] p-5 space-y-4">
+            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] p-5 space-y-4 h-full">
               <ShimmerBar className="h-4 w-32" />
               <ShimmerBar className="h-44 w-full" />
             </div>
           ) : (
             <InteractiveDonutChart
-              data={formatDonutData}
-              title={t("chartContentFormat", "Distribusi Format Konten")}
-              subtitle="Rasio kategori serial, movie dan shorts"
+              data={catalogBreakdown}
+              title="Katalog Drama"
+              subtitle="Proporsi konten Serial vs Film"
             />
           )}
         </div>

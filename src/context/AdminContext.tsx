@@ -74,7 +74,7 @@ const translations: Record<Language, Record<string, string>> = {
     deleteConfirm: "Apakah Anda yakin ingin menghapus data ini secara permanen?",
     totalUsersHint: "Akun terdaftar dan terverifikasi di platform",
     activePartiesHint: "Sesi nonton bareng yang sedang berjalan live",
-    watchSessionsHint: "Total riwayat pemutaran video seluruh pengguna",
+    totalWatchEntriesHint: "Total riwayat pemutaran video seluruh pengguna",
     activity24hHint: "Interaksi pengguna dan room terkini",
   },
   en: {
@@ -145,7 +145,7 @@ const translations: Record<Language, Record<string, string>> = {
     deleteConfirm: "Are you sure you want to permanently delete this data?",
     totalUsersHint: "Registered and verified platform accounts",
     activePartiesHint: "Watch party sessions currently running live",
-    watchSessionsHint: "Total video playback history across all users",
+    totalWatchEntriesHint: "Total video playback history across all users",
     activity24hHint: "Recent user and room interactions",
   },
 };

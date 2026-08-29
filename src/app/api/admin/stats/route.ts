@@ -50,7 +50,13 @@ export async function GET() {
     };
     const platformBreakdown: Record<string, number> = {};
 
+    // Extract all watch dates for yearly & monthly grouping
+    const watchDates: string[] = [];
+
     watchHistory?.forEach((w) => {
+      if (w.last_watched_at) {
+        watchDates.push(w.last_watched_at);
+      }
       if (w.content_type && contentBreakdown[w.content_type] !== undefined) {
         contentBreakdown[w.content_type] = (contentBreakdown[w.content_type] || 0) + 1;
       }
@@ -59,18 +65,12 @@ export async function GET() {
       }
     });
 
-    // 4. User activity count (last 24h & total)
-    const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-
-    const { data: recentActivity, error: aError } = await admin
+    // 4. User activity count (total from user_activity table)
+    const { count: totalUserActivities, error: countErr } = await admin
       .from("user_activity")
-      .select("id, activity_type, user_id, created_at")
-      .gte("created_at", oneDayAgo);
+      .select("*", { count: "exact", head: true });
 
-    if (aError) throw aError;
-
-    const activity24h = recentActivity?.length || 0;
+    const totalActivities = totalUserActivities ?? 0;
 
     // 5. Recent registered users (last 5)
     const { data: latestUsers } = await admin
@@ -93,6 +93,21 @@ export async function GET() {
       .order("created_at", { ascending: false })
       .limit(10);
 
+    // 8. Catalog Summary from Backend API
+    let catalogSummary = null;
+    try {
+      const backendUrl = process.env.API_BASE_URL || "http://localhost:7860";
+      const catalogRes = await fetch(`${backendUrl}/stats/catalog-summary`, {
+        next: { revalidate: 86400 }, // Cache untuk 1 hari (86400 detik)
+      });
+      if (catalogRes.ok) {
+        const catalogData = await catalogRes.json();
+        catalogSummary = catalogData.result || catalogData;
+      }
+    } catch (catErr) {
+      console.error("[AdminStatsAPI] Error fetching catalog summary:", catErr);
+    }
+
     return NextResponse.json({
       metrics: {
         totalUsers,
@@ -102,13 +117,15 @@ export async function GET() {
         activeRooms,
         totalWatchEntries,
         completedWatches,
-        activity24h,
+        totalActivities,
       },
       contentBreakdown,
       platformBreakdown,
+      watchDates,
       latestUsers: latestUsers || [],
       latestRooms: latestRooms || [],
       latestActivities: latestActivities || [],
+      catalogSummary,
     });
   } catch (err: unknown) {
     console.error("[AdminStatsAPI] Error:", err);
