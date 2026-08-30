@@ -88,7 +88,6 @@ const MONTH_NAMES = [
 export default function DashboardOverviewPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [cleaningUp, setCleaningUp] = useState(false);
   const { t, language } = useAdmin();
 
   const currentYear = new Date().getFullYear();
@@ -147,25 +146,6 @@ export default function DashboardOverviewPage() {
     return { availableYears: years, monthlyTrendData: trend };
   })();
 
-  async function handleCleanupExpiredRooms() {
-    try {
-      setCleaningUp(true);
-      const res = await fetch("/api/admin/watch-parties", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "cleanup" }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal membersihkan");
-      toast.success(data.message || "Pembersihan selesai");
-      fetchStats();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
-    } finally {
-      setCleaningUp(false);
-    }
-  }
-
   function formatRelativeDate(isoString: string) {
     try {
       const date = new Date(isoString);
@@ -223,16 +203,7 @@ export default function DashboardOverviewPage() {
               className="h-8 px-3 text-xs font-medium border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
             >
               <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${isLoading ? "animate-spin text-[#2BA641]" : "text-zinc-500 dark:text-zinc-400"}`} />
-              {t("refresh", "Segarkan")}
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleCleanupExpiredRooms}
-              disabled={cleaningUp}
-              className="h-8 px-3 text-xs font-medium bg-[#2BA641] text-white hover:bg-[#238A36] transition-colors cursor-pointer"
-            >
-              <Sparkles className="mr-1.5 h-3.5 w-3.5 text-white" />
-              {cleaningUp ? "Membersihkan..." : "Bersihkan Party"}
+              Refresh
             </Button>
           </div>
         }
