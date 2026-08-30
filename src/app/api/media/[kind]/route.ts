@@ -36,13 +36,25 @@ function upstreamHeaders(request: NextRequest) {
   return headers;
 }
 
-function copyResponseHeaders(upstream: Response, kind: "image" | "stream" | "subtitle") {
+function copyResponseHeaders(upstream: Response, kind: "image" | "stream" | "subtitle", isSegment: boolean = false) {
   const responseHeaders = new Headers();
   FORWARD_RESPONSE_HEADERS.forEach((header) => {
     const value = upstream.headers.get(header);
     if (value) responseHeaders.set(header, value);
   });
-  responseHeaders.set("Cache-Control", kind === "image" ? "public, max-age=3600, s-maxage=86400" : "no-store, no-transform");
+  
+  if (kind === "image") {
+    responseHeaders.set("Cache-Control", "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800");
+  } else if (kind === "stream" && isSegment) {
+    // Segment video/ts tidak pernah berubah, cache agresif di CDN Vercel agar hemat kuota egress
+    responseHeaders.set("Cache-Control", "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800");
+  } else if (kind === "subtitle") {
+    responseHeaders.set("Cache-Control", "public, max-age=3600, s-maxage=86400");
+  } else {
+    // Playlist m3u8 (bisa update untuk live) -> no-cache
+    responseHeaders.set("Cache-Control", "public, max-age=0, s-maxage=0, must-revalidate");
+  }
+  
   responseHeaders.set("X-Accel-Buffering", "no");
   return responseHeaders;
 }
@@ -94,13 +106,14 @@ async function handleMedia(
   const url = readMediaToken(request.nextUrl.searchParams.get("token") || "", mediaKind, userAgent);
   if (!url) return NextResponse.json({ error: "Invalid media token" }, { status: 403 });
 
+  const isSegment = mediaKind === "stream" && /\.(ts|mp4|m4s)(\?|$)/i.test(url);
   const upstream = await fetchWithRetry(url, {
     method,
     headers: upstreamHeaders(request),
-    cache: mediaKind === "image" ? "force-cache" : "no-store",
+    cache: (mediaKind === "image" || isSegment) ? "force-cache" : "no-store",
     signal: request.signal,
   });
-  const responseHeaders = copyResponseHeaders(upstream, mediaKind);
+  const responseHeaders = copyResponseHeaders(upstream, mediaKind, isSegment);
   if (method === "HEAD") return new Response(null, { status: upstream.status, headers: responseHeaders });
 
   const contentType = upstream.headers.get("content-type") || "";

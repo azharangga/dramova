@@ -63,35 +63,37 @@
     var base = {
       enableWorker: true,
       lowLatencyMode: true,
-      backBufferLength: 60,
+      backBufferLength: 90, // Increase back buffer to save re-downloads
       maxFragLookUpTolerance: 0.25,
       progressive: true,
-      fragLoadingMaxRetry: 4,
-      manifestLoadingMaxRetry: 3,
-      levelLoadingMaxRetry: 4,
+      fragLoadingMaxRetry: 6, // More retries for intermittent network
+      manifestLoadingMaxRetry: 6,
+      levelLoadingMaxRetry: 6,
+      fragLoadingRetryDelay: 1000,
+      manifestLoadingRetryDelay: 1000,
+      levelLoadingRetryDelay: 1000,
+      startLevel: -1, // Auto level by default
     };
 
     switch (quality) {
       case 'good':
         return Object.assign(base, {
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
-          maxBufferSize: 60 * 1000 * 1000, // 60MB
-          startLevel: -1, // auto
+          maxBufferLength: 60, // Increase forward buffer (60s)
+          maxMaxBufferLength: 120, // Max 2 minutes buffer
+          maxBufferSize: 100 * 1000 * 1000, // 100MB max memory
         });
       case 'medium':
         return Object.assign(base, {
-          maxBufferLength: 15,
-          maxMaxBufferLength: 30,
-          maxBufferSize: 30 * 1000 * 1000, // 30MB
-          startLevel: 0, // lowest
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          maxBufferSize: 50 * 1000 * 1000, // 50MB
           capLevelToPlayerSize: true,
         });
       case 'poor':
         return Object.assign(base, {
-          maxBufferLength: 8,
-          maxMaxBufferLength: 15,
-          maxBufferSize: 15 * 1000 * 1000, // 15MB
+          maxBufferLength: 15,
+          maxMaxBufferLength: 30,
+          maxBufferSize: 25 * 1000 * 1000, // 25MB
           startLevel: 0,
           capLevelToPlayerSize: true,
           lowLatencyMode: false,

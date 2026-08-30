@@ -138,11 +138,13 @@ export async function proxyToBackend(
     const raw = await response.json();
     const data = sanitizeBackendResponse(raw, userAgent);
 
-    // Jika hasil kosong: set stale-if-error tinggi agar CDN Vercel tetap sajikan cache lama
+    // Optimized Vercel Edge caching:
+    // Metadata/katalog di-cache 1 jam di CDN, SWR hingga 1 hari.
+    // Jika backend kosong/error: stale-if-error hingga 7 hari.
     const isEmpty = isEmptyResult(raw);
     const cacheControl = isEmpty
       ? "public, max-age=0, s-maxage=0, stale-while-revalidate=86400, stale-if-error=604800"
-      : "public, max-age=120, s-maxage=900, stale-while-revalidate=3600, stale-if-error=86400";
+      : "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400, stale-if-error=604800";
 
     return NextResponse.json(data, {
       status: response.status,
