@@ -33,6 +33,7 @@ function authError(message: string) {
   if (message === "Invalid login credentials") return "Email atau password salah";
   if (message === "User already registered") return "Email sudah terdaftar. Silakan login.";
   if (message === "Email not confirmed") return "Email belum aktif. Nonaktifkan email confirmation di Supabase Auth settings.";
+  if (message === "Akun Anda telah di-banned. Silakan hubungi admin.") return message;
   return message;
 }
 

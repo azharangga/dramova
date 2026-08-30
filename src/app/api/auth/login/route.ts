@@ -25,5 +25,10 @@ export async function POST(request: Request) {
     .eq("id", data.user.id)
     .maybeSingle();
 
+  if (profile?.is_banned) {
+    await supabase.auth.signOut();
+    return NextResponse.json({ error: "Akun Anda telah di-banned. Silakan hubungi admin." }, { status: 403 });
+  }
+
   return NextResponse.json({ user: mapAuthUser(data.user, profile) });
 }
