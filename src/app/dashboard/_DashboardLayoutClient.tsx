@@ -69,8 +69,8 @@ function InnerDashboardLayout({ children }: DashboardLayoutClientProps) {
         <DashboardHeader onToggleSidebar={() => setSidebarOpen((v) => !v)} />
 
         {/* Main Viewport */}
-        <main className="flex-1 overflow-y-auto relative px-4 py-5 sm:px-6 sm:py-6 lg:px-10 lg:py-8 min-w-0">
-          <div className="h-full max-w-7xl mx-auto">
+        <main className="flex-1 overflow-y-auto relative px-4 pt-5 pb-12 sm:px-6 sm:pt-6 sm:pb-14 lg:px-10 lg:pt-8 lg:pb-16 min-w-0">
+          <div className="max-w-7xl mx-auto space-y-6">
             {children}
           </div>
         </main>

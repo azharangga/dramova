@@ -9,6 +9,7 @@ import {
   Tv, 
   History, 
   ShieldAlert, 
+  Activity,
   ExternalLink,
   Settings,
   User as UserIcon,
@@ -92,6 +93,11 @@ export default function Sidebar({ className, onCloseMobile }: SidebarProps) {
     {
       group: t("system", "Keamanan dan Pengaturan"),
       items: [
+        {
+          name: "Monitoring Server",
+          href: "/dashboard/monitoring",
+          icon: Activity,
+        },
         {
           name: t("auditLogs", "Log Audit"),
           href: "/dashboard/audit-logs",

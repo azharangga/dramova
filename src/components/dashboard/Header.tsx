@@ -87,6 +87,7 @@ export default function DashboardHeader({ onToggleSidebar }: HeaderProps) {
     "/dashboard/users": t("users", "Pengguna"),
     "/dashboard/watch-parties": t("watchParties", "Watch Party"),
     "/dashboard/content-activity": t("contentActivity", "Aktivitas Konten"),
+    "/dashboard/monitoring": "Monitoring Server",
     "/dashboard/audit-logs": t("auditLogs", "Log Audit"),
     "/dashboard/settings": t("settings", "Pengaturan Akun"),
   };
@@ -108,6 +109,7 @@ export default function DashboardHeader({ onToggleSidebar }: HeaderProps) {
     { title: t("users", "Manajemen Pengguna"), href: "/dashboard/users", desc: "Daftar akun dan hak akses" },
     { title: t("watchParties", "Watch Party"), href: "/dashboard/watch-parties", desc: "Monitoring sesi room nobar" },
     { title: t("contentActivity", "Aktivitas Konten"), href: "/dashboard/content-activity", desc: "Riwayat dan tren tontonan" },
+    { title: "Monitoring Server", href: "/dashboard/monitoring", desc: "Status Vercel, Supabase, Hugging Face" },
     { title: t("auditLogs", "Log Audit"), href: "/dashboard/audit-logs", desc: "Keamanan dan jejak aksi admin" },
     { title: t("settings", "Pengaturan Akun"), href: "/dashboard/settings", desc: "Profil dan keamanan superuser" },
   ];
