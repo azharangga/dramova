@@ -34,6 +34,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import {
   Tooltip,
@@ -54,6 +64,7 @@ export default function DashboardHeader({ onToggleSidebar }: HeaderProps) {
   const { theme, setTheme, resolvedTheme, language, setLanguage, t } = useAdmin();
 
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [navQuery, setNavQuery] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -271,7 +282,7 @@ export default function DashboardHeader({ onToggleSidebar }: HeaderProps) {
               </DropdownMenuItem>
               <DropdownMenuSeparator className="my-1 border-zinc-200 dark:border-zinc-800" />
               <DropdownMenuItem
-                onClick={handleLogout}
+                onClick={() => setShowLogoutConfirm(true)}
                 className="flex items-center gap-2 cursor-pointer text-xs py-1.5 text-[#ff2201] focus:text-[#ff2201] focus:bg-[#ff2201]/10 rounded"
               >
                 <LogOut className="h-3.5 w-3.5" strokeWidth={1.75} />
@@ -281,6 +292,24 @@ export default function DashboardHeader({ onToggleSidebar }: HeaderProps) {
           </DropdownMenu>
         </div>
       </header>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Keluar</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin keluar dari sesi akun ini?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-700 text-white">
+              Keluar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Global Quick Search Modal Dialog */}
       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>

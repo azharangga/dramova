@@ -110,13 +110,15 @@ function AlertDialogAction({
 function AlertDialogCancel({
   className,
   ...props
-}: React.ComponentProps<typeof Button>) {
+}: React.ComponentProps<typeof AlertDialogPrimitive.Close>) {
   return (
-    <Button
-      variant="outline"
-      className={cn("mt-2 sm:mt-0", className)}
-      {...props}
-    />
+    <AlertDialogPrimitive.Close asChild>
+      <Button
+        variant="outline"
+        className={cn("mt-2 sm:mt-0 cursor-pointer", className)}
+        {...props}
+      />
+    </AlertDialogPrimitive.Close>
   );
 }
 

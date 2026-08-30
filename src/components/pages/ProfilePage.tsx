@@ -9,6 +9,16 @@ import { useAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/client";
 import { trackActivity } from "@/lib/activity";
 import PageHeader from "@/components/PageHeader";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const namePattern = /^[A-Za-zÀ-ÖØ-öø-ÿ' .-]+$/;
 
@@ -17,6 +27,7 @@ export function ProfilePage() {
   const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
   const supabase = useMemo(() => createClient(), []);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");

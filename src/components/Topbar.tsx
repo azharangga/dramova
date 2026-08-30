@@ -5,11 +5,22 @@ import { LogOut, User, History, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Topbar() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -93,11 +104,36 @@ export default function Topbar() {
               )}
               <a href="/profile" onClick={() => setProfileOpen(false)}><User size={15} />Profile</a>
               <a href="/history" onClick={() => setProfileOpen(false)}><History size={15} />Riwayat</a>
-              <button onClick={handleLogout}><LogOut size={15} />Logout</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileOpen(false);
+                  setShowLogoutConfirm(true);
+                }}
+              >
+                <LogOut size={15} />Logout
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Keluar</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin keluar dari sesi akun ini?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-700 text-white">
+              Keluar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }
