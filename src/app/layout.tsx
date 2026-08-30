@@ -43,6 +43,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       images: ["/img/icon.png"],
     },
+    verification: {
+      google: "v_raeuFrJyqVMSSx-pCVxDdz-2NWgExrVovs6L8sgW0",
+    },
   };
 }
 
