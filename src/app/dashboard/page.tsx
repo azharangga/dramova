@@ -191,7 +191,7 @@ export default function DashboardOverviewPage() {
     <div className="space-y-6">
       {/* 1. Page Header */}
       <DashboardPageHeader
-        title={t("dashboard", "Dasbor Utama")}
+        title={t("dashboard", "Dashboard")}
         description={t("platformDesc", "Panel kendali terpusat operasional dan infrastruktur Dramova.")}
         actions={
           <div className="flex items-center gap-2">
@@ -263,7 +263,7 @@ export default function DashboardOverviewPage() {
             isLoading ? (
               <ShimmerBar className="h-3 w-28 mt-0.5" />
             ) : (
-              t("watchSessionsHint", "Total riwayat pemutaran video")
+              t("watchSessionsHint", "Total riwayat pemutaran konten")
             )
           }
         />
@@ -300,7 +300,7 @@ export default function DashboardOverviewPage() {
             <InteractiveAreaChart
               data={monthlyTrendData}
               title={t("chartPlayTrend", "Tren Sesi Tontonan")}
-              subtitle="Statistik volume pemutaran konten bulanan"
+              subtitle="Statistik pemutaran konten"
               years={availableYears}
               selectedYear={selectedYear}
               onSelectYear={setSelectedYear}
@@ -318,7 +318,7 @@ export default function DashboardOverviewPage() {
             <InteractiveDonutChart
               data={catalogBreakdown}
               title="Katalog Drama"
-              subtitle="Proporsi konten Serial vs Film"
+              subtitle="Proporsi konten Serial dan Movie"
             />
           )}
         </div>
@@ -413,10 +413,10 @@ export default function DashboardOverviewPage() {
           <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800">
             <div>
               <div className="text-[11px] font-semibold tracking-wider text-zinc-500 dark:text-zinc-400">
-                {t("watchParties", "Nobar")}
+                {t("watchParties", "Nonton Bareng")}
               </div>
               <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 mt-0.5">
-                {t("recentWatchParties", "Nobar Terkini")}
+                {t("recentWatchParties", "Room Nobar Terkini")}
               </div>
             </div>
             <Link

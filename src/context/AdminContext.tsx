@@ -7,9 +7,9 @@ export type Language = "id" | "en";
 
 const translations: Record<Language, Record<string, string>> = {
   id: {
-    dashboard: "Dasbor Utama",
+    dashboard: "Dashboard",
     users: "Manajemen Pengguna",
-    watchParties: "Nobar",
+    watchParties: "Nonton Bareng",
     contentActivity: "Aktivitas Konten",
     auditLogs: "Log Audit Security",
     settings: "Pengaturan Akun",
@@ -30,9 +30,9 @@ const translations: Record<Language, Record<string, string>> = {
     superuserBadge: "Superuser Workspace",
     platformDesc: "Panel kendali terpusat operasional dan infrastruktur Dramova",
     quickActions: "Tindakan Cepat",
-    recentWatchParties: "Nobar Terkini",
+    recentWatchParties: "Room Nobar Terkini",
     noWatchPartyActivity: "Belum ada aktivitas Nonton Bareng",
-    cleanupParties: "Bersihkan Party Usang",
+    cleanupParties: "Bersihkan Room Usang",
     viewAll: "Lihat Semua",
     filter: "Filter Data",
     status: "Status",
