@@ -151,6 +151,15 @@
       const title = D.cleanTitle?.(drama.title || drama.bookName) || drama.title || drama.bookName || D.t('common.no_title');
       const synopsis = drama.synopsis || drama.description || drama.introduction || D.t('common.no_synopsis');
       const cover = drama.cover || drama.coverWap || drama.image || D.placeholderImg(title);
+      
+      // Update document title dynamically on client
+      if (title && title !== D.t('common.no_title')) {
+        document.title = `Nonton ${title} Sub Indo Full Episode | Dramova`;
+      }
+
+      // Prevent SSR titles from breaking the client hydrate
+      const ssrMeta = document.querySelector('.sr-only');
+      if (ssrMeta) ssrMeta.style.display = 'none';
 
       // Hide skeletons, show real content
       if (dom.titleSkeleton) dom.titleSkeleton.style.display = 'none';

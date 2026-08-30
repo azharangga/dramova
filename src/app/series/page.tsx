@@ -1,3 +1,19 @@
+import { Metadata } from "next";
+import { getBaseUrl } from "@/lib/site-url";
+
+export const metadata: Metadata = {
+  title: "Nonton Serial dan Drama Terbaru Sub Indo",
+  description: "Jelajahi dan streaming koleksi drama Korea (K-Drama), drama China (C-Drama), serial Jepang, dan drama Asia terbaru subtitle Indonesia gratis di Dramova.",
+  alternates: {
+    canonical: `${getBaseUrl()}/series`,
+  },
+  openGraph: {
+    title: "Nonton Serial dan Drama Terbaru Sub Indo | Dramova",
+    description: "Koleksi terlengkap serial drama Korea, China, dan Asia subtitle Indonesia gratis.",
+    url: `${getBaseUrl()}/series`,
+  },
+};
+
 import PageShell from "@/components/PageShell";
 import { CatalogSearchControls, CatalogTabs } from "@/components/CatalogControls";
 import { MediaGridSection, MediaRailSection } from "@/components/MediaSections";

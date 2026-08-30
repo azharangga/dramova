@@ -1,3 +1,13 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Pencarian",
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
+
 import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
 import PageScript from "@/components/PageScript";

@@ -1,3 +1,14 @@
+import { Metadata } from "next";
+import { getBaseUrl } from "@/lib/site-url";
+
+export const metadata: Metadata = {
+  title: "Dramova · Nonton Movie dan Serial Drama Subtitle Indonesia",
+  description: "Platform streaming modern untuk menikmati berbagai cerita menarik, mulai dari movie hingga serial favorit, dalam pengalaman menonton yang nyaman, ringan, dan immersive.",
+  alternates: {
+    canonical: `${getBaseUrl()}`,
+  },
+};
+
 import PageShell from "@/components/PageShell";
 import PageScript from "@/components/PageScript";
 import { MediaGridSection, MediaRailSection } from "@/components/MediaSections";

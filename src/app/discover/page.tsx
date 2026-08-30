@@ -1,3 +1,19 @@
+import { Metadata } from "next";
+import { getBaseUrl } from "@/lib/site-url";
+
+export const metadata: Metadata = {
+  title: "Jelajahi dan Cari Drama, Movie, serta Serial Favorit",
+  description: "Temukan drama Korea, drama China, film Asia, dan berbagai genre favorit Anda dari seluruh platform dengan mudah dan cepat di Dramova.",
+  alternates: {
+    canonical: `${getBaseUrl()}/discover`,
+  },
+  openGraph: {
+    title: "Jelajahi dan Cari Drama, Movie, serta Serial Favorit | Dramova",
+    description: "Temukan film dan serial terbaik pilihan Anda di Dramova.",
+    url: `${getBaseUrl()}/discover`,
+  },
+};
+
 import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
 import PageScript from "@/components/PageScript";

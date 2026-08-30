@@ -781,6 +781,10 @@
       const title = D.cleanTitle?.(drama.title || drama.bookName) || drama.title || drama.bookName || D.t('common.no_title');
       dom.title.textContent = title;
       dom.title.style.display = '';
+
+      if (title && title !== D.t('common.no_title')) {
+        document.title = `Nonton ${title} Episode ${state.currentEp || 1} Sub Indo | Dramova`;
+      }
       
       const isOngoing = drama.isOngoing;
       const ongoingLabel = isOngoing ? (drama.currentEpisode ? `Ongoing (Episode ${drama.currentEpisode})` : 'Ongoing') : '';

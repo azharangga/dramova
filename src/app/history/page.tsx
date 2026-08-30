@@ -1,3 +1,13 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Riwayat Tontonan",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
 import Script from "next/script";
 import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";

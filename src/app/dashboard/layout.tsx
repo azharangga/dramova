@@ -1,4 +1,14 @@
 import { requireSuperuser } from "@/lib/admin";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Dashboard Admin",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
 import DashboardLayoutClient from "./_DashboardLayoutClient";
 
 export const dynamic = "force-dynamic";

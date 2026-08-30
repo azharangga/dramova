@@ -2,17 +2,49 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "@/styles/globals.css";
 import { Providers } from "@/app/providers";
+import { getBaseUrl } from "@/lib/site-url";
 
-export const metadata: Metadata = {
-  title: "Dramova · Movie dan Serial",
-  description:
-    "Platform streaming modern untuk menikmati berbagai cerita menarik, mulai dari movie hingga serial favorit, dalam pengalaman menonton yang nyaman, ringan, dan immersive.",
-  manifest: "/manifest.webmanifest",
-  icons: {
-    icon: "/img/favicon.png",
-    apple: "/img/icon.png",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const baseUrl = getBaseUrl();
+  const title = "Dramova · Movie dan Serial";
+  const description = "Platform streaming modern untuk menikmati berbagai cerita menarik, mulai dari movie hingga serial favorit, dalam pengalaman menonton yang nyaman, ringan, dan immersive.";
+
+  return {
+    metadataBase: new URL(baseUrl),
+    title: {
+      default: title,
+      template: "%s | Dramova",
+    },
+    description,
+    manifest: "/manifest.webmanifest",
+    icons: {
+      icon: "/img/favicon.png",
+      apple: "/img/icon.png",
+    },
+    openGraph: {
+      title,
+      description,
+      url: baseUrl,
+      siteName: "Dramova",
+      locale: "id_ID",
+      type: "website",
+      images: [
+        {
+          url: "/img/icon.png",
+          width: 512,
+          height: 512,
+          alt: "Dramova Logo",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/img/icon.png"],
+    },
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -155,6 +187,28 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
+        <Script id="schema-org-website" type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Dramova",
+            "url": getBaseUrl(),
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": `${getBaseUrl()}/search?q={search_term_string}`,
+              "query-input": "required name=search_term_string"
+            }
+          })
+        }} />
+        <Script id="schema-org-organization" type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Dramova",
+            "url": getBaseUrl(),
+            "logo": `${getBaseUrl()}/img/icon.png`
+          })
+        }} />
         <div id="pullRefreshIndicator" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         </div>
