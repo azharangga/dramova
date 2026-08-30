@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/register"];
-const ALWAYS_ACCESSIBLE = ["/domain-moved"];
+const ALWAYS_ACCESSIBLE: string[] = [];
 const PUBLIC_API_PATHS = [
   "/api/auth/turnstile",
   "/api/auth/login",
@@ -59,7 +59,6 @@ export async function updateSession(request: NextRequest) {
 
   if (isStaticAsset || isPublicApiPath(pathname)) return response;
 
-  // /domain-moved is always reachable regardless of auth status.
   if (ALWAYS_ACCESSIBLE.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return response;
   }
