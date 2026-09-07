@@ -16,8 +16,6 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
-  CheckCircle2,
-  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -36,20 +34,29 @@ interface MonitoringData {
       latencyMs: number;
       statusCode: number;
       url: string;
+      hardware: string;
+      runtime: string;
+      region: string;
+      regionFlagUrl: string;
+      keepAlive: string;
       error: string | null;
     };
     supabase: {
       status: "healthy" | "degraded" | "offline";
       latencyMs: number;
-      activeConnections: number;
-      maxConnections: number;
       dbSize: string;
-      tablesCount: number;
+      storageUsed?: string;
+      storageQuota?: string;
+      database: string;
+      hardware: string;
+      region: string;
+      regionFlagUrl: string;
       error: string | null;
     };
     vercel: {
       status: string;
       hasToken: boolean;
+      latencyMs: number;
       latestDeployment: {
         id: string;
         url: string;
@@ -57,11 +64,11 @@ interface MonitoringData {
         createdAt: number;
         target: string;
       } | null;
-      edgeCaching: {
-        status: string;
-        swrEnabled: boolean;
-        segmentCache: string;
-      };
+      edgeCaching: string;
+      hardware: string;
+      runtime: string;
+      region: string;
+      regionFlagUrl: string;
     };
   };
   runtime: {
@@ -213,12 +220,12 @@ export default function MonitoringPage() {
 
       {/* 2. Top Status Cards (3 Infrastructures) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* A. Hugging Face Card */}
+         {/* A. Hugging Face Card */}
         <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] p-5 shadow-2xs relative overflow-hidden flex flex-col justify-between">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-lg bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 grid place-items-center">
+                <div className="h-9 w-9 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 grid place-items-center">
                   <Server className="h-5 w-5" strokeWidth={1.75} />
                 </div>
                 <div>
@@ -240,27 +247,38 @@ export default function MonitoringPage() {
 
             <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2 text-xs">
               <div className="flex justify-between items-center">
+                <span className="text-zinc-500 dark:text-zinc-400">Server</span>
+                <span className="font-mono font-medium text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                  {data ? (
+                    <>
+                      <img src={data.services.huggingFace.regionFlagUrl} alt="" width={16} height={12} className="rounded-[2px] object-cover" />
+                      {data.services.huggingFace.region}
+                    </>
+                  ) : (
+                    "-"
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
                 <span className="text-zinc-500 dark:text-zinc-400">{t("responseLatency", "Response Latency")}</span>
                 <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">
                   {data ? `${data.services.huggingFace.latencyMs} ms` : "-"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-zinc-500 dark:text-zinc-400">{t("hardwareSpecs", "Hardware Specs")}</span>
-                <span className="font-mono text-zinc-800 dark:text-zinc-200">2 vCPU · 16GB RAM</span>
+                <span className="text-zinc-500 dark:text-zinc-400">Hardware</span>
+                <span className="font-mono text-zinc-800 dark:text-zinc-200">{data?.services.huggingFace.hardware || "2 vCPU · 16 GB RAM"}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-zinc-500 dark:text-zinc-400">HTTP Status Code</span>
-                <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">
-                  {data?.services.huggingFace.statusCode || 200} OK
-                </span>
+                <span className="text-zinc-500 dark:text-zinc-400">Runtime</span>
+                <span className="font-mono text-zinc-800 dark:text-zinc-200">{data?.services.huggingFace.runtime || "Docker · Python"}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-zinc-500 dark:text-zinc-400">Keep-Alive Protocol</span>
-                <span className="font-mono text-zinc-800 dark:text-zinc-200">Automatic / Active</span>
+                <span className="text-zinc-500 dark:text-zinc-400">Keep-Alive</span>
+                <span className="font-mono text-emerald-600 dark:text-emerald-400">{data?.services.huggingFace.keepAlive || "Active"}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-zinc-500 dark:text-zinc-400">{t("targetEndpoint", "Target Endpoint")}</span>
+                <span className="text-zinc-500 dark:text-zinc-400">Endpoint</span>
                 <div className="flex items-center gap-1">
                   <span className="font-mono text-[11px] text-zinc-600 dark:text-zinc-400 truncate max-w-[120px]">
                     {showHfUrl
@@ -298,12 +316,12 @@ export default function MonitoringPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 grid place-items-center">
+                <div className="h-9 w-9 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 grid place-items-center">
                   <Cloud className="h-5 w-5" strokeWidth={1.75} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Vercel Edge Network</h3>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Frontend / Proxy Caching</p>
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Vercel</h3>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Frontend Hosting</p>
                 </div>
               </div>
               <DashboardBadge variant="success" size="sm">
@@ -313,24 +331,35 @@ export default function MonitoringPage() {
 
             <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2 text-xs">
               <div className="flex justify-between items-center">
+                <span className="text-zinc-500 dark:text-zinc-400">Server</span>
+                <span className="font-mono font-medium text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                  {data ? (
+                    <>
+                      <img src={data.services.vercel.regionFlagUrl} alt="" width={16} height={12} className="rounded-[2px] object-cover" />
+                      {data.services.vercel.region}
+                    </>
+                  ) : (
+                    "-"
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-500 dark:text-zinc-400">{t("responseLatency", "Response Latency")}</span>
+                <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+                  {data ? `${data.services.vercel.latencyMs} ms` : "-"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-500 dark:text-zinc-400">Hardware</span>
+                <span className="font-mono text-zinc-800 dark:text-zinc-200">{data?.services.vercel.hardware || "-"}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-500 dark:text-zinc-400">Runtime</span>
+                <span className="font-mono text-zinc-800 dark:text-zinc-200">{data?.services.vercel.runtime || "Node.js"}</span>
+              </div>
+              <div className="flex justify-between items-center">
                 <span className="text-zinc-500 dark:text-zinc-400">{t("edgeCaching", "Edge Caching")}</span>
-                <span className="font-semibold text-[#2BA641]">
-                  {data?.services.vercel.edgeCaching.status || "Active (Global Anycast)"}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-500 dark:text-zinc-400">{t("swrRevalidation", "SWR Revalidation")}</span>
-                <span className="font-mono text-zinc-800 dark:text-zinc-200">1 Day (86400s)</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-500 dark:text-zinc-400">{t("videoSegmentCache", "Video Segment Cache")}</span>
-                <span className="font-mono text-zinc-800 dark:text-zinc-200">
-                  {data?.services.vercel.edgeCaching.segmentCache}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-500 dark:text-zinc-400">Anycast Network</span>
-                <span className="font-mono text-zinc-800 dark:text-zinc-200">300+ Edge Regions</span>
+                <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400">{data?.services.vercel.edgeCaching || "Active"}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-zinc-500 dark:text-zinc-400">{t("latestDeployment", "Latest Deployment")}</span>
@@ -366,16 +395,16 @@ export default function MonitoringPage() {
           </div>
         </div>
 
-        {/* C. Supabase Database Card */}
+        {/* C. Supabase Card */}
         <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#18181b] p-5 shadow-2xs relative overflow-hidden flex flex-col justify-between">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 grid place-items-center">
+                <div className="h-9 w-9 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 grid place-items-center">
                   <Database className="h-5 w-5" strokeWidth={1.75} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Supabase PostgreSQL</h3>
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Supabase</h3>
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Database / Auth / Storage</p>
                 </div>
               </div>
@@ -389,33 +418,40 @@ export default function MonitoringPage() {
 
             <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 space-y-2 text-xs">
               <div className="flex justify-between items-center">
+                <span className="text-zinc-500 dark:text-zinc-400">Server</span>
+                <span className="font-mono font-medium text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                  {data ? (
+                    <>
+                      <img src={data.services.supabase.regionFlagUrl} alt="" width={16} height={12} className="rounded-[2px] object-cover" />
+                      {data.services.supabase.region}
+                    </>
+                  ) : (
+                    "-"
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
                 <span className="text-zinc-500 dark:text-zinc-400">{t("queryLatency", "Query Latency")}</span>
                 <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">
                   {data ? `${data.services.supabase.latencyMs} ms` : "-"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-zinc-500 dark:text-zinc-400">{t("activePoolConnections", "Active Pool Connections")}</span>
-                <span className="font-mono text-zinc-800 dark:text-zinc-200">
-                  {data?.services.supabase.activeConnections} / {data?.services.supabase.maxConnections} max
-                </span>
+                <span className="text-zinc-500 dark:text-zinc-400">Hardware</span>
+                <span className="font-mono text-zinc-800 dark:text-zinc-200">{data?.services.supabase.hardware || "-"}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-500 dark:text-zinc-400">Database</span>
+                <span className="font-mono text-zinc-800 dark:text-zinc-200">{data?.services.supabase.database || "PostgreSQL"}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-zinc-500 dark:text-zinc-400">{t("databaseSize", "Database Size")}</span>
+                <span className="font-mono text-zinc-800 dark:text-zinc-200">{data?.services.supabase.dbSize || "-"}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-500 dark:text-zinc-400">Storage Size</span>
                 <span className="font-mono text-zinc-800 dark:text-zinc-200">
-                  {data?.services.supabase.dbSize}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-500 dark:text-zinc-400">Auth / Storage Status</span>
-                <span className="font-mono font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                  <CheckCircle2 size={12} className="text-[#2BA641]" /> Operational
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-500 dark:text-zinc-400">Row Level Security</span>
-                <span className="font-mono text-zinc-800 dark:text-zinc-200 flex items-center gap-1">
-                  <ShieldCheck size={12} className="text-[#2BA641]" /> Enforced
+                  {data ? `${data.services.supabase.storageUsed || "0 KB"} / ${data.services.supabase.storageQuota || "1.00 GB"}` : "-"}
                 </span>
               </div>
             </div>

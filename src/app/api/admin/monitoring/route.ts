@@ -18,6 +18,11 @@ export async function GET() {
     latencyMs: 0,
     statusCode: 0,
     url: backendUrl,
+    hardware: "2 vCPU · 16 GB RAM",
+    runtime: "Docker · Python",
+    region: "us-east-1",
+    regionFlagUrl: "https://flagcdn.com/w20/us.png",
+    keepAlive: "Active",
     error: null as string | null,
   };
 
@@ -31,6 +36,8 @@ export async function GET() {
     hfData.latencyMs = Date.now() - hfStart;
     hfData.statusCode = hfRes.status;
     hfData.status = hfRes.ok || hfRes.status === 200 || hfRes.status === 404 ? "online" : "degraded";
+    const ct = hfRes.headers.get("x-hf-runtime") || hfRes.headers.get("server") || "";
+    if (ct) hfData.runtime = ct.replace(/\s*\d+(\.\d+)*/g, "").replace(/\s{2,}/g, " ").trim().slice(0, 30) || "Docker · Python";
   } catch (err: unknown) {
     hfData.latencyMs = Date.now() - hfStart;
     hfData.status = "offline";
@@ -39,56 +46,120 @@ export async function GET() {
 
   // 2. Check Supabase (Database & Services)
   const sbStart = Date.now();
+  const REGION_MAP: Record<string, { flag: string; code: string; cc: string }> = {
+    "ap-southeast-1": { flag: "🇸🇬", code: "ap-southeast-1", cc: "sg" },
+    "ap-northeast-1": { flag: "🇯🇵", code: "ap-northeast-1", cc: "jp" },
+    "us-east-1": { flag: "🇺🇸", code: "us-east-1", cc: "us" },
+    "eu-central-1": { flag: "🇩🇪", code: "eu-central-1", cc: "de" },
+    "eu-west-1": { flag: "🇮🇪", code: "eu-west-1", cc: "ie" },
+  };
+  const rawRegion = process.env.SUPABASE_REGION || process.env.NEXT_PUBLIC_SUPABASE_REGION || "ap-southeast-1";
+  const regionInfo = REGION_MAP[rawRegion] || REGION_MAP["ap-southeast-1"];
+  function formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  }
+  const DB_QUOTA_BYTES = Number(process.env.SUPABASE_DB_QUOTA_MB || 500) * 1024 * 1024;
+  const DB_QUOTA_LABEL = formatBytes(DB_QUOTA_BYTES);
+  const STORAGE_QUOTA_BYTES = Number(process.env.SUPABASE_STORAGE_QUOTA_MB || 1024) * 1024 * 1024;
+  const STORAGE_QUOTA_LABEL = formatBytes(STORAGE_QUOTA_BYTES);
   let supabaseData = {
     status: "healthy",
     latencyMs: 0,
-    activeConnections: 0,
-    maxConnections: 60, // standard free tier pool default
     dbSize: "N/A",
+    dbSizeBytes: 0,
+    dbQuotaBytes: DB_QUOTA_BYTES,
+    dbQuota: DB_QUOTA_LABEL,
     tablesCount: 0,
+    storageUsedBytes: 0,
+    storageUsed: "0 KB",
+    storageQuota: STORAGE_QUOTA_LABEL,
+    storageQuotaBytes: STORAGE_QUOTA_BYTES,
+    database: "PostgreSQL",
+    hardware: "Shared · 2 vCPU · Auto-scale",
+    region: regionInfo.code,
+    regionFlag: regionInfo.flag,
+    regionFlagUrl: `https://flagcdn.com/w20/${regionInfo.cc}.png`,
     error: null as string | null,
   };
 
   try {
     const adminClient = createAdminClient();
-    // Query users & count
     const { count: usersCount, error: countErr } = await adminClient
       .from("profiles")
       .select("*", { count: "exact", head: true });
-
     if (countErr) throw countErr;
-
     supabaseData.latencyMs = Date.now() - sbStart;
-    supabaseData.tablesCount = usersCount || 0;
-
-    // Run connection stats check if allowed
+    supabaseData.tablesCount = 6;
+    try {
+      const { data: storageList } = await adminClient.storage.from("avatars").list("", { limit: 100 });
+      if (storageList) {
+        supabaseData.storageUsedBytes = storageList.length * 80000;
+        supabaseData.storageUsed = formatBytes(supabaseData.storageUsedBytes);
+      }
+    } catch {}
+    let dbSizeResolved = false;
     try {
       const { data: connData } = await adminClient.rpc("get_db_stats").single();
-    if (connData && typeof connData === "object") {
-      const stats = connData as Record<string, unknown>;
-      supabaseData.activeConnections = Number(stats.active_connections) || 3;
-      supabaseData.dbSize = String(stats.db_size || "15.4 MB");
-    } else {
-      supabaseData.activeConnections = 2;
-      supabaseData.dbSize = "15.4 MB";
+      if (connData && typeof connData === "object") {
+        const stats = connData as Record<string, unknown>;
+        if (stats.db_size_bytes) {
+          supabaseData.dbSizeBytes = Number(stats.db_size_bytes);
+          supabaseData.dbSize = formatBytes(supabaseData.dbSizeBytes);
+          dbSizeResolved = true;
+        } else if (stats.db_size) {
+          supabaseData.dbSize = String(stats.db_size);
+          const m = String(stats.db_size).match(/([\d.]+)\s*MB/i);
+          if (m) supabaseData.dbSizeBytes = Math.round(parseFloat(m[1]) * 1024 * 1024);
+          else {
+            const k = String(stats.db_size).match(/([\d.]+)\s*KB/i);
+            if (k) supabaseData.dbSizeBytes = Math.round(parseFloat(k[1]) * 1024);
+          }
+          dbSizeResolved = true;
+        }
+      }
+    } catch {}
+    if (!dbSizeResolved) {
+      try {
+        const tables = ["profiles", "watch_history", "watch_rooms", "watch_room_participants", "user_activity", "admin_audit_logs"] as const;
+        let totalBytes = 0;
+        for (const tbl of tables) {
+          const { data, error } = await adminClient.from(tbl).select("*").limit(50);
+          if (!error && data) {
+            const sampleBytes = new TextEncoder().encode(JSON.stringify(data)).length;
+            const avgRow = data.length ? sampleBytes / data.length : 1024;
+            const { count } = await adminClient.from(tbl).select("*", { count: "exact", head: true });
+            totalBytes += Math.round((count || data.length) * avgRow);
+          }
+        }
+        totalBytes += supabaseData.storageUsedBytes;
+        totalBytes = Math.max(totalBytes, 1024 * 80);
+        supabaseData.dbSizeBytes = totalBytes;
+        supabaseData.dbSize = formatBytes(totalBytes);
+      } catch {
+        supabaseData.dbSize = formatBytes(supabaseData.dbSizeBytes || 0);
+      }
     }
-  } catch {
-    supabaseData.activeConnections = 2;
-    supabaseData.dbSize = "15.4 MB";
-  }
+    supabaseData.dbSize = `${supabaseData.dbSize} / ${supabaseData.dbQuota}`;
   } catch (err: unknown) {
     supabaseData.latencyMs = Date.now() - sbStart;
     supabaseData.status = "degraded";
     supabaseData.error = err instanceof Error ? err.message : String(err);
+    if (supabaseData.dbSize === "N/A") supabaseData.dbSize = `0 KB / ${supabaseData.dbQuota}`;
   }
 
   // 3. Check Vercel API
   const vercelToken = process.env.VERCEL_API_TOKEN;
   const vercelProjectId = process.env.VERCEL_PROJECT_ID;
 
+  const vercelRegion = "iad1";
+  const vercelRegionLabel = "iad1 · Washington D.C.";
   let vercelData: {
     status: string;
     hasToken: boolean;
+    latencyMs: number;
     latestDeployment?: {
       id: string;
       url: string;
@@ -100,24 +171,26 @@ export async function GET() {
       name: string;
       framework: string;
     } | null;
-    edgeCaching: {
-      status: string;
-      swrEnabled: boolean;
-      segmentCache: string;
-    };
+    edgeCaching: string;
+    hardware: string;
+    runtime: string;
+    region: string;
+    regionFlagUrl: string;
   } = {
     status: "healthy",
     hasToken: Boolean(vercelToken && vercelProjectId),
+    latencyMs: 0,
     latestDeployment: null,
     project: null,
-    edgeCaching: {
-      status: "Active (Global Anycast)",
-      swrEnabled: true,
-      segmentCache: "1 Day (86400s)",
-    },
+    edgeCaching: "Active",
+    hardware: "Serverless · 1024 MB RAM",
+    runtime: "Node.js",
+    region: vercelRegionLabel,
+    regionFlagUrl: "https://flagcdn.com/w20/us.png",
   };
 
   if (vercelToken && vercelProjectId) {
+    const vercelStart = Date.now();
     try {
       const vRes = await fetch(
         `https://api.vercel.com/v6/deployments?projectId=${vercelProjectId}&limit=1`,
@@ -128,6 +201,7 @@ export async function GET() {
           signal: AbortSignal.timeout(5000),
         }
       );
+      vercelData.latencyMs = Date.now() - vercelStart;
 
       if (vRes.ok) {
         const json = await vRes.json();
@@ -141,10 +215,12 @@ export async function GET() {
             target: dep.target || "production",
           };
           vercelData.status = dep.state === "READY" ? "healthy" : dep.state.toLowerCase();
+
+
         }
       }
     } catch {
-      // Ignore API errors
+      vercelData.latencyMs = Date.now() - vercelStart;
     }
   }
 
